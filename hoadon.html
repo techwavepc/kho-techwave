@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Kế Toán & Lưu Trữ (V10.17 - Strict Billing)</title>
+    <title>TechWave PC - Kế Toán & Lưu Trữ (V10.18 - Readonly Vault)</title>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
@@ -114,7 +114,7 @@
             <div class="form-card" style="padding: 0; overflow: hidden;">
                 <div class="card-title" style="padding: 15px 20px 10px 20px; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: #38bdf8;">🗂️ TRA CỨU LỊCH SỬ HÓA ĐƠN (ĐÃ KHÓA XÓA)</span>
+                        <span style="color: #38bdf8;">🗂️ TRA CỨU LỊCH SỬ HÓA ĐƠN (ĐÃ KHÓA SỬA/XÓA)</span>
                     </div>
                 </div>
                 <div style="padding: 15px;">
@@ -271,7 +271,7 @@
                         <td>${bill.tenKH}<br><small>${bill.sdtKH}</small></td>
                         <td style="text-align:center;">${bill.items.length}</td>
                         <td style="text-align:center; padding: 10px;">
-                            <button class="btn-sm btn-print-sm" onclick="inLaiBill('${key}')">👁️ Tra cứu / In lại</button>
+                            <button class="btn-sm btn-print-sm" onclick="traCuuBill('${key}')">👁️ Tra cứu chi tiết</button>
                         </td>
                     </tr>
                 `);
@@ -293,7 +293,6 @@
         return "SON" + String(nextNum).padStart(4, '0');
     }
 
-    // NÚT 1: CHỈ XEM TRƯỚC BÁO GIÁ (KHÔNG CHẠM VÀO DATABASE)
     function xemTruocBaoGia() {
         let checkboxes = document.querySelectorAll('.chk-hang:checked');
         if (checkboxes.length === 0) return showToast("❌ Chọn ít nhất 1 linh kiện để báo giá!", true);
@@ -307,7 +306,7 @@
         let now = new Date();
         let thoiGianXuat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} - ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
         
-        let maBillNhap = "BG-" + String(now.getTime()).slice(-5); // Mã rác tạm thời
+        let maBillNhap = "BG-" + String(now.getTime()).slice(-5); 
         
         let mangIn = [];
         checkboxes.forEach(chk => {
@@ -320,11 +319,9 @@
             items: mangIn.map(d => ({ ...d, tenChinhThuc: taoTenChinhThuc(d) }))
         };
 
-        // Gửi cờ 'true' để hệ thống biết đây là bản Nháp
-        veTrangInA4(record, true);
+        veTrangInA4(record, 'nhap');
     }
 
-    // NÚT 2: CHỐT ĐƠN VÀ LƯU VĨNH VIỄN VÀO CLOUD
     function chotDonVaInBill() {
         let checkboxes = document.querySelectorAll('.chk-hang:checked');
         if (checkboxes.length === 0) return showToast("❌ Chọn linh kiện!", true);
@@ -360,14 +357,14 @@
             showToast("✅ Đã lưu lên CLOUD!");
             document.getElementById('formKeToan').reset();
             document.getElementById('checkAll').checked = false;
-            veTrangInA4(record, false); // Gửi cờ 'false' vì đây là bản chính thức
+            veTrangInA4(record, 'chot'); 
         });
     }
 
-    function inLaiBill(ma) { veTrangInA4(lichSuBills[ma], false); }
+    function traCuuBill(ma) { veTrangInA4(lichSuBills[ma], 'tracuu'); }
 
-    // THUẬT TOÁN VE TRANG IN (NHẬN BIẾT BẢN NHÁP HAY CHÍNH THỨC)
-    function veTrangInA4(data, isPreview = false) {
+    // THUẬT TOÁN V10.18: PHÂN QUYỀN ĐÓNG BĂNG READONLY & TRIỆT TIÊU LỆNH IN
+    function veTrangInA4(data, mode) {
         let grouped = {};
         data.items.forEach(d => {
             let key = d.tenChinhThuc + '_' + d.tinhTrang;
@@ -394,6 +391,10 @@
             return idA - idB;
         });
 
+        // NẾU LÀ TRA CỨU: NHÚNG LỆNH READONLY VÀ CẤM TƯƠNG TÁC CHUỘT
+        let isLock = mode === 'tracuu' ? 'readonly style="width:100%; border:none; text-align:center; font-family:\\'Times New Roman\\', serif; font-size:13px; outline:none; background:transparent; pointer-events:none;"' : 'style="width:100%; border:none; text-align:center; font-family:\\'Times New Roman\\', serif; font-size:13px; outline:none; background:transparent;"';
+        let isLockInput = mode === 'tracuu' ? 'readonly style="flex:1;font-family:\\'Times New Roman\\',serif;font-size:13px;border:none;outline:none; pointer-events:none;"' : 'style="flex:1;font-family:\\'Times New Roman\\',serif;font-size:13px;border:none;outline:none;"';
+
         let rows = ''; let tong = 0; let stt = 1;
         arrGrouped.forEach(g => {
             let sub = g.sl * g.gia; tong += sub;
@@ -409,13 +410,15 @@
                 <td>${g.sl}</td>
                 <td style="text-align:right;">${g.gia===0?'-':g.gia.toLocaleString('vi-VN')}</td>
                 <td style="text-align:right;">${sub===0?'-':sub.toLocaleString('vi-VN')}</td>
-                <td style="padding:1px;"><input type="text" value="36 Tháng" style="width:100%; border:none; text-align:center; font-family:'Times New Roman', serif; font-size:13px; outline:none; background:transparent;"></td>
+                <td style="padding:1px;"><input type="text" value="36 Tháng" ${isLock}></td>
             </tr>`;
         });
 
-        // ĐỔI TIÊU ĐỀ NẾU LÀ BẢN NHÁP
-        let titleDoc = isPreview ? "BẢNG BÁO GIÁ THIẾT BỊ" : "PHIẾU XUẤT KHO KIÊM BẢO HÀNH";
-        let watermark = isPreview ? `<div style="text-align:center; color:#ef4444; font-size:12px; font-style:italic; margin-bottom:5px;">(Bản in nháp - Chưa lưu vào hệ thống)</div>` : '';
+        let titleDoc = mode === 'nhap' ? "BẢNG BÁO GIÁ THIẾT BỊ" : (mode === 'tracuu' ? "BẢN SAO LƯU HÓA ĐƠN (CHỈ XEM)" : "PHIẾU XUẤT KHO KIÊM BẢO HÀNH");
+        let watermark = mode === 'nhap' ? `<div style="text-align:center; color:#ef4444; font-size:12px; font-style:italic; margin-bottom:5px;">(Bản in nháp - Chưa lưu vào hệ thống)</div>` : (mode === 'tracuu' ? `<div style="text-align:center; color:#f59e0b; font-size:12px; font-weight:bold; margin-bottom:5px;">(Bản ghi hệ thống - Dữ liệu đã được khóa cứng)</div>` : '');
+        
+        // TRIỆT TIÊU NÚT IN NẾU LÀ CHẾ ĐỘ TRA CỨU
+        let btnInGiay = mode === 'tracuu' ? '' : `<div class="no-print" style="text-align:center;margin-top:10px;"><button onclick="window.print()" style="padding:10px 30px;font-size:14px;background:#10b981;color:white;border:none;cursor:pointer;border-radius:5px;font-weight:bold;">🖨️ IN GIẤY A4</button></div>`;
 
         let html = `<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><style>
             body{font-family:'Times New Roman',serif;width:100%;max-width:800px;margin:0 auto;padding:10px;font-size:13px;color:#000;box-sizing:border-box;}
@@ -426,7 +429,6 @@
             .info-grid {display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:5px;}
             .info-item {display:flex;align-items:baseline;}
             .info-item span {font-weight:bold;margin-right:5px;}
-            .info-item input {flex:1;font-family:'Times New Roman',serif;font-size:13px;border:none;outline:none;}
             .policy{margin-top:5px;}
             .policy h3 {margin: 0 0 2px 0; font-size: 13px; text-decoration: underline;}
             .policy p {margin: 1px 0; font-size: 12px;}
@@ -453,14 +455,14 @@
         ${watermark}
         
         <div class="info-grid">
-            <div class="info-item"><span>Khách hàng:</span><input value="${data.tenKH}"></div>
+            <div class="info-item"><span>Khách hàng:</span><input value="${data.tenKH}" ${isLockInput}></div>
             <div style="display:flex;justify-content:flex-end;padding-right:10px;"><span>Số phiếu:</span><strong style="margin-left:5px;font-size:15px;">${data.maBill}</strong></div>
-            <div class="info-item"><span>Số điện thoại:</span><input value="${data.sdtKH}"></div>
+            <div class="info-item"><span>Số điện thoại:</span><input value="${data.sdtKH}" ${isLockInput}></div>
             <div style="text-align:right;padding-right:10px;">Ngày xuất: ${data.ngayXuat}</div>
-            <div class="info-item" style="grid-column:span 2;"><span>Địa chỉ:</span><input value="${data.dcKH}"></div>
-            <div class="info-item"><span>Nhân viên:</span><input value="${data.saleKH}"></div>
+            <div class="info-item" style="grid-column:span 2;"><span>Địa chỉ:</span><input value="${data.dcKH}" ${isLockInput}></div>
+            <div class="info-item"><span>Nhân viên:</span><input value="${data.saleKH}" ${isLockInput}></div>
             <div></div>
-            <div class="info-item" style="grid-column:span 2;"><span>Ghi chú:</span><input value="${data.noteKH}"></div>
+            <div class="info-item" style="grid-column:span 2;"><span>Ghi chú:</span><input value="${data.noteKH}" ${isLockInput}></div>
         </div>
 
         <table>
@@ -468,8 +470,8 @@
             <tbody>${rows}</tbody>
             <tfoot>
                 <tr><th colspan="6" style="text-align:right;padding-right:15px;">Cộng tiền hàng</th><td style="text-align:right;font-weight:bold;">${tong.toLocaleString('vi-VN')}</td><td></td></tr>
-                <tr><th colspan="6" style="text-align:right;padding-right:15px;">Khuyến mãi</th><td><input id="valKm" style="width:100%;text-align:right;font-family:'Times New Roman',serif;font-size:13px;font-weight:bold;background:transparent;border:none;outline:none;" value="0" oninput="tinhToan()"></td><td></td></tr>
-                <tr><th colspan="6" style="text-align:right;padding-right:15px;">Đã Thanh toán</th><td><input id="valTt" style="width:100%;text-align:right;font-family:'Times New Roman',serif;font-size:13px;font-weight:bold;background:transparent;border:none;outline:none;" value="0" oninput="tinhToan()"></td><td></td></tr>
+                <tr><th colspan="6" style="text-align:right;padding-right:15px;">Khuyến mãi</th><td><input id="valKm" style="width:100%;text-align:right;font-family:'Times New Roman',serif;font-size:13px;font-weight:bold;background:transparent;border:none;outline:none; ${mode==='tracuu'?'pointer-events:none;':''}" value="0" oninput="tinhToan()" ${mode==='tracuu'?'readonly':''}></td><td></td></tr>
+                <tr><th colspan="6" style="text-align:right;padding-right:15px;">Đã Thanh toán</th><td><input id="valTt" style="width:100%;text-align:right;font-family:'Times New Roman',serif;font-size:13px;font-weight:bold;background:transparent;border:none;outline:none; ${mode==='tracuu'?'pointer-events:none;':''}" value="0" oninput="tinhToan()" ${mode==='tracuu'?'readonly':''}></td><td></td></tr>
                 <tr><th colspan="6" style="text-align:right;padding-right:15px;">Tổng tiền còn lại</th><td id="valConLai" style="text-align:right;font-weight:bold;color:#da3633;">${tong.toLocaleString('vi-VN')}</td><td></td></tr>
             </tfoot>
         </table>
@@ -493,9 +495,7 @@
             <div><b>Kinh doanh</b><br><i style="font-size:12px;">(Ký, họ tên)</i><div class="sig-space"></div></div>
         </div>
         
-        <div class="no-print" style="text-align:center;margin-top:10px;">
-            <button onclick="window.print()" style="padding:10px 30px;font-size:14px;background:#10b981;color:white;border:none;cursor:pointer;border-radius:5px;font-weight:bold;">🖨️ IN GIẤY A4</button>
-        </div>
+        ${btnInGiay}
         
         <script>
             const tongGoc = ${tong};
@@ -504,6 +504,7 @@
             function tinhToan() {
                 let iKm = document.getElementById('valKm');
                 let iTt = document.getElementById('valTt');
+                if(!iKm || !iTt) return;
                 let km = parseTien(iKm.value);
                 let tt = parseTien(iTt.value);
                 iKm.value = km === 0 ? '0' : formatTien(km);
