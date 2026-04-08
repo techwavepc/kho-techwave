@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Kế Toán & Lưu Trữ</title>
+    <title>TechWave PC - Kế Toán & Lưu Trữ (V10.17 - Strict Billing)</title>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
@@ -34,22 +34,22 @@
         }
         .form-group input:focus { border-color: #34d399; background-color: #000; }
         
-        button.btn-main { 
-            background: #059669; color: #fff; border: none; padding: 15px; cursor: pointer; 
-            border-radius: 6px; font-weight: bold; transition: 0.2s; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-top: 10px; width: 100%;
+        .btn-main { 
+            color: #fff; border: none; padding: 15px; cursor: pointer; 
+            border-radius: 6px; font-weight: bold; transition: 0.2s; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; 
+            display: flex; align-items: center; justify-content: center; text-align: center;
         }
-        button.btn-main:hover { background: #047857; }
+        .btn-main:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
-        .btn-sm { padding: 6px 12px; font-size: 11px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; margin-right: 5px;}
-        .btn-print-sm { background: rgba(56, 189, 248, 0.2); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.4); }
-        .btn-undo-sm { background: rgba(244, 63, 94, 0.2); color: #f43f5e; border: 1px solid rgba(244, 63, 94, 0.4); }
+        .btn-sm { padding: 8px 15px; font-size: 12px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; transition: 0.2s; width: 100%;}
+        .btn-print-sm { background: rgba(56, 189, 248, 0.1); color: #38bdf8; border: 1px solid rgba(56, 189, 248, 0.3); }
+        .btn-print-sm:hover { background: rgba(56, 189, 248, 0.2); }
 
         table { width: 100%; border-collapse: collapse; font-size: 13px; background: transparent;}
         th, td { padding: 14px 10px; text-align: left; vertical-align: middle; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         th { color: #34d399; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; border-bottom: 2px solid rgba(255, 255, 255, 0.1); position: sticky; top: 0; background: #1e293b; z-index: 1;}
         
         .sn-text { color: #fbbf24; font-family: monospace; letter-spacing: 1px; font-size: 13px; font-weight: bold; display: block; margin-top: 4px;}
-        .billed-item td { opacity: 0.4; filter: grayscale(100%); pointer-events: none; }
 
         #status-mang { position: fixed; bottom: 15px; right: 15px; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); z-index: 999; }
         .online { color: #4ade80; } .offline { color: #f87171; }
@@ -82,7 +82,15 @@
             <div class="form-group"><label>Địa Chỉ Giao Hàng</label><input type="text" id="khDiaChi" placeholder="Nhập địa chỉ..."></div>
             <div class="form-group"><label>Nhân Viên Sale</label><input type="text" id="khSale" placeholder="Tên nhân viên..."></div>
             <div class="form-group"><label>Ghi Chú Kỹ Thuật</label><input type="text" id="khGhiChu" placeholder="VD: Cài full bộ cơ bản..."></div>
-            <button type="submit" class="btn-main">📄 TẠO & LƯU HÓA ĐƠN</button>
+            
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+                <button type="button" class="btn-main" style="background: #0284c7;" onclick="xemTruocBaoGia()">
+                    📄 XUẤT BÁO GIÁ NHÁP (KHÔNG LƯU)
+                </button>
+                <button type="submit" class="btn-main" style="background: #059669;">
+                    ☁️ CHỐT ĐƠN & LƯU HÓA ĐƠN
+                </button>
+            </div>
         </form>
 
         <div class="right-col">
@@ -106,7 +114,7 @@
             <div class="form-card" style="padding: 0; overflow: hidden;">
                 <div class="card-title" style="padding: 15px 20px 10px 20px; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: #38bdf8;">🗂️ TRA CỨU LỊCH SỬ HÓA ĐƠN (CLOUD)</span>
+                        <span style="color: #38bdf8;">🗂️ TRA CỨU LỊCH SỬ HÓA ĐƠN (ĐÃ KHÓA XÓA)</span>
                     </div>
                 </div>
                 <div style="padding: 15px;">
@@ -190,30 +198,35 @@
         const tb = document.querySelector('#bangChoIn tbody');
         tb.innerHTML = '';
         let hangDaBanAll = [];
-        duLieuKho.forEach((don, indexGoc) => { if (don.trangThai === 'Đã bán') hangDaBanAll.push({ don, indexGoc }); });
+        
+        duLieuKho.forEach((don, indexGoc) => { 
+            if (don.trangThai === 'Đã bán') {
+                if (!don.maHoaDon) {
+                    hangDaBanAll.push({ don, indexGoc, status: 'ready' });
+                } else if (don.maHoaDon && !lichSuBills[don.maHoaDon]) {
+                    hangDaBanAll.push({ don, indexGoc, status: 'error' });
+                }
+            } 
+        });
 
         if (hangDaBanAll.length === 0) {
-            tb.innerHTML = `<tr><td colspan="4" class="empty-state">Chưa có linh kiện nào được đánh dấu "Đã xuất kho".</td></tr>`;
+            tb.innerHTML = `<tr><td colspan="4" class="empty-state">Không có linh kiện nào đang chờ lên Bill.</td></tr>`;
         } else {
             hangDaBanAll.reverse().forEach(item => {
-                let { don, indexGoc } = item;
+                let { don, indexGoc, status } = item;
                 let ten = taoTenChinhThuc(don);
                 
-                if (don.maHoaDon) {
-                    if (lichSuBills[don.maHoaDon]) {
-                        tb.insertAdjacentHTML('beforeend', `<tr class="billed-item"><td style="text-align:center; font-size:10px; color:#f87171;">ĐÃ XUẤT<br>${don.maHoaDon}</td><td><strong>${ten}</strong><span class="sn-text">SN: ${don.maSerial}</span></td><td>${don.loaiLinhKien}</td><td style="text-align:right;">${(parseInt(don.giaBan)||0).toLocaleString('vi-VN')}</td></tr>`);
-                    } else {
-                        tb.insertAdjacentHTML('beforeend', `
-                            <tr>
-                                <td style="text-align:center;">
-                                    <button type="button" style="background:#f59e0b; color:#000; border:none; padding:6px 10px; font-size:10px; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="goLoiBongMa(${indexGoc})">🛠️ GỠ LỖI</button>
-                                </td>
-                                <td><strong style="color:#f59e0b;">[LỖI KẸT ĐƠN CŨ] ${ten}</strong><span class="sn-text" style="color:#f59e0b;">SN: ${don.maSerial}</span></td>
-                                <td>${don.loaiLinhKien}</td>
-                                <td style="text-align:right;">${(parseInt(don.giaBan)||0).toLocaleString('vi-VN')}</td>
-                            </tr>
-                        `);
-                    }
+                if (status === 'error') {
+                    tb.insertAdjacentHTML('beforeend', `
+                        <tr>
+                            <td style="text-align:center;">
+                                <button type="button" style="background:#f59e0b; color:#000; border:none; padding:6px 10px; font-size:10px; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="goLoiBongMa(${indexGoc})">🛠️ GỠ LỖI</button>
+                            </td>
+                            <td><strong style="color:#f59e0b;">[LỖI KẸT ĐƠN CŨ] ${ten}</strong><span class="sn-text" style="color:#f59e0b;">SN: ${don.maSerial}</span></td>
+                            <td>${don.loaiLinhKien}</td>
+                            <td style="text-align:right;">${(parseInt(don.giaBan)||0).toLocaleString('vi-VN')}</td>
+                        </tr>
+                    `);
                 } else {
                     tb.insertAdjacentHTML('beforeend', `<tr><td style="text-align:center;"><input type="checkbox" class="chk-hang" value="${indexGoc}"></td><td><strong>${ten}</strong><span class="sn-text">SN: ${don.maSerial}</span></td><td>${don.loaiLinhKien}</td><td style="text-align:right;">${(parseInt(don.giaBan)||0).toLocaleString('vi-VN')}</td></tr>`);
                 }
@@ -222,7 +235,7 @@
     }
 
     function goLoiBongMa(idx) {
-        if(confirm("Linh kiện này đang bị kẹt tem ảo từ phiên bản trước. Bấm OK để hệ thống lột bỏ tem lỗi và đưa nó về trạng thái sẵn sàng in Bill!")) {
+        if(confirm("Linh kiện này đang bị kẹt tem ảo. Bấm OK để hệ thống lột bỏ tem lỗi!")) {
             delete duLieuKho[idx].maHoaDon;
             delete duLieuKho[idx].ngayXuatBill;
             khoRef.set(duLieuKho).then(() => showToast("✅ Đã gỡ kẹt thành công!"));
@@ -257,9 +270,8 @@
                         <td style="font-size:12px; color:#94a3b8;">${bill.ngayXuat}</td>
                         <td>${bill.tenKH}<br><small>${bill.sdtKH}</small></td>
                         <td style="text-align:center;">${bill.items.length}</td>
-                        <td style="text-align:center;">
-                            <button class="btn-sm btn-print-sm" onclick="inLaiBill('${key}')">🖨️ In</button>
-                            <button class="btn-sm btn-undo-sm" onclick="hoanTacBill('${key}')">↩️ Hủy</button>
+                        <td style="text-align:center; padding: 10px;">
+                            <button class="btn-sm btn-print-sm" onclick="inLaiBill('${key}')">👁️ Tra cứu / In lại</button>
                         </td>
                     </tr>
                 `);
@@ -281,6 +293,38 @@
         return "SON" + String(nextNum).padStart(4, '0');
     }
 
+    // NÚT 1: CHỈ XEM TRƯỚC BÁO GIÁ (KHÔNG CHẠM VÀO DATABASE)
+    function xemTruocBaoGia() {
+        let checkboxes = document.querySelectorAll('.chk-hang:checked');
+        if (checkboxes.length === 0) return showToast("❌ Chọn ít nhất 1 linh kiện để báo giá!", true);
+
+        let tenKH = document.getElementById('khTen').value.trim() || 'Khách vãng lai';
+        let sdtKH = document.getElementById('khSDT').value.trim();
+        let dcKH = document.getElementById('khDiaChi').value.trim();
+        let saleKH = document.getElementById('khSale').value.trim();
+        let noteKH = document.getElementById('khGhiChu').value.trim();
+
+        let now = new Date();
+        let thoiGianXuat = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')} - ${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${now.getFullYear()}`;
+        
+        let maBillNhap = "BG-" + String(now.getTime()).slice(-5); // Mã rác tạm thời
+        
+        let mangIn = [];
+        checkboxes.forEach(chk => {
+            let idx = parseInt(chk.value);
+            mangIn.push(duLieuKho[idx]); 
+        });
+
+        let record = { 
+            maBill: maBillNhap, tenKH, sdtKH, dcKH, saleKH, noteKH, ngayXuat: thoiGianXuat,
+            items: mangIn.map(d => ({ ...d, tenChinhThuc: taoTenChinhThuc(d) }))
+        };
+
+        // Gửi cờ 'true' để hệ thống biết đây là bản Nháp
+        veTrangInA4(record, true);
+    }
+
+    // NÚT 2: CHỐT ĐƠN VÀ LƯU VĨNH VIỄN VÀO CLOUD
     function chotDonVaInBill() {
         let checkboxes = document.querySelectorAll('.chk-hang:checked');
         if (checkboxes.length === 0) return showToast("❌ Chọn linh kiện!", true);
@@ -305,8 +349,7 @@
         });
 
         let record = { 
-            maBill, tenKH, sdtKH, dcKH, saleKH, noteKH, 
-            ngayXuat: thoiGianXuat,
+            maBill, tenKH, sdtKH, dcKH, saleKH, noteKH, ngayXuat: thoiGianXuat,
             items: mangIn.map(d => ({ ...d, tenChinhThuc: taoTenChinhThuc(d) }))
         };
 
@@ -317,25 +360,14 @@
             showToast("✅ Đã lưu lên CLOUD!");
             document.getElementById('formKeToan').reset();
             document.getElementById('checkAll').checked = false;
-            veTrangInA4(record);
+            veTrangInA4(record, false); // Gửi cờ 'false' vì đây là bản chính thức
         });
     }
 
-    function hoanTacBill(ma) {
-        if (!confirm(`Xác nhận HỦY hóa đơn [${ma}] và TRẢ HÀNG về danh sách chờ in?\n\nSố hóa đơn này sẽ được thu hồi để cấp cho lần xuất bill tiếp theo.`)) return;
-        
-        duLieuKho.forEach(d => { if (d.maHoaDon === ma) { delete d.maHoaDon; delete d.ngayXuatBill; }});
-        
-        Promise.all([
-            khoRef.set(duLieuKho),
-            billRef.child(ma).remove()
-        ]).then(() => showToast("✅ Đã hoàn tác thành công!"));
-    }
+    function inLaiBill(ma) { veTrangInA4(lichSuBills[ma], false); }
 
-    function inLaiBill(ma) { veTrangInA4(lichSuBills[ma]); }
-
-    // THUẬT TOÁN V10.15: SMART WRAP - CẤY THẺ INLINE-BLOCK CẤM BẺ GÃY SERIAL
-    function veTrangInA4(data) {
+    // THUẬT TOÁN VE TRANG IN (NHẬN BIẾT BẢN NHÁP HAY CHÍNH THỨC)
+    function veTrangInA4(data, isPreview = false) {
         let grouped = {};
         data.items.forEach(d => {
             let key = d.tenChinhThuc + '_' + d.tinhTrang;
@@ -381,6 +413,10 @@
             </tr>`;
         });
 
+        // ĐỔI TIÊU ĐỀ NẾU LÀ BẢN NHÁP
+        let titleDoc = isPreview ? "BẢNG BÁO GIÁ THIẾT BỊ" : "PHIẾU XUẤT KHO KIÊM BẢO HÀNH";
+        let watermark = isPreview ? `<div style="text-align:center; color:#ef4444; font-size:12px; font-style:italic; margin-bottom:5px;">(Bản in nháp - Chưa lưu vào hệ thống)</div>` : '';
+
         let html = `<!DOCTYPE html><html lang="vi"><head><meta charset="UTF-8"><style>
             body{font-family:'Times New Roman',serif;width:100%;max-width:800px;margin:0 auto;padding:10px;font-size:13px;color:#000;box-sizing:border-box;}
             .header{display:flex;align-items:center;gap:15px;border-bottom:2px solid #000;padding-bottom:5px;margin-bottom:5px;}
@@ -412,7 +448,9 @@
                 MST: 0110335168
             </div>
         </div>
-        <h1 style="text-align:center;font-size:18px;text-transform:uppercase;margin:5px 0;">Phiếu xuất kho kiêm bảo hành</h1>
+        
+        <h1 style="text-align:center;font-size:18px;text-transform:uppercase;margin:5px 0;">${titleDoc}</h1>
+        ${watermark}
         
         <div class="info-grid">
             <div class="info-item"><span>Khách hàng:</span><input value="${data.tenKH}"></div>
