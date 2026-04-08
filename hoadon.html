@@ -179,10 +179,12 @@
         }
     }
 
+    // THUẬT TOÁN V10.19: BỌC THÉP ÉP KIỂU CHUỖI
     function taoTenChinhThuc(don) {
-        let tenGoc = don.tenSP || '';
-        let hang = (don.hangSanXuat && don.hangSanXuat !== 'Khác') ? don.hangSanXuat : '';
-        let loai = don.loaiLinhKien || '';
+        if (!don) return 'Linh kiện không xác định';
+        let tenGoc = String(don.tenSP || '');
+        let hang = String((don.hangSanXuat && don.hangSanXuat !== 'Khác') ? don.hangSanXuat : '');
+        let loai = String(don.loaiLinhKien || '');
         let tenLoaiTrangTri = (loai === 'Tản') ? 'Tản nhiệt' : (loai === 'Vỏ' ? 'Vỏ Case' : loai);
         
         if (loai === 'VGA' && hang !== '') {
@@ -199,17 +201,20 @@
         tb.innerHTML = '';
         let hangDaBanAll = [];
         
-        // V10.19: Thêm chốt chặn !don chống crash do hố đen Null
-        duLieuKho.forEach((don, indexGoc) => { 
-            if (!don) return; 
-            if (don.trangThai === 'Đã bán') {
-                if (!don.maHoaDon) {
-                    hangDaBanAll.push({ don, indexGoc, status: 'ready' });
-                } else if (don.maHoaDon && !lichSuBills[don.maHoaDon]) {
-                    hangDaBanAll.push({ don, indexGoc, status: 'error' });
+        // THUẬT TOÁN V10.19: SỬ DỤNG OBJECT.KEYS ĐỂ KHÁNG LỖI MẢNG BỊ THỦNG
+        if (duLieuKho) {
+            Object.keys(duLieuKho).forEach(idx => {
+                let don = duLieuKho[idx];
+                if (!don) return;
+                if (don.trangThai === 'Đã bán') {
+                    if (!don.maHoaDon) {
+                        hangDaBanAll.push({ don, indexGoc: idx, status: 'ready' });
+                    } else if (don.maHoaDon && !lichSuBills[don.maHoaDon]) {
+                        hangDaBanAll.push({ don, indexGoc: idx, status: 'error' });
+                    }
                 }
-            } 
-        });
+            });
+        }
 
         if (hangDaBanAll.length === 0) {
             tb.innerHTML = `<tr><td colspan="4" class="empty-state">Không có linh kiện nào đang chờ lên Bill.</td></tr>`;
@@ -222,15 +227,15 @@
                     tb.insertAdjacentHTML('beforeend', `
                         <tr>
                             <td style="text-align:center;">
-                                <button type="button" style="background:#f59e0b; color:#000; border:none; padding:6px 10px; font-size:10px; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="goLoiBongMa(${indexGoc})">🛠️ GỠ LỖI</button>
+                                <button type="button" style="background:#f59e0b; color:#000; border:none; padding:6px 10px; font-size:10px; font-weight:bold; border-radius:4px; cursor:pointer;" onclick="goLoiBongMa('${indexGoc}')">🛠️ GỠ LỖI</button>
                             </td>
-                            <td><strong style="color:#f59e0b;">[LỖI KẸT ĐƠN CŨ] ${ten}</strong><span class="sn-text" style="color:#f59e0b;">SN: ${don.maSerial}</span></td>
-                            <td>${don.loaiLinhKien}</td>
+                            <td><strong style="color:#f59e0b;">[LỖI KẸT ĐƠN CŨ] ${ten}</strong><span class="sn-text" style="color:#f59e0b;">SN: ${don.maSerial || ''}</span></td>
+                            <td>${don.loaiLinhKien || ''}</td>
                             <td style="text-align:right;">${(parseInt(don.giaBan)||0).toLocaleString('vi-VN')}</td>
                         </tr>
                     `);
                 } else {
-                    tb.insertAdjacentHTML('beforeend', `<tr><td style="text-align:center;"><input type="checkbox" class="chk-hang" value="${indexGoc}"></td><td><strong>${ten}</strong><span class="sn-text">SN: ${don.maSerial}</span></td><td>${don.loaiLinhKien}</td><td style="text-align:right;">${(parseInt(don.giaBan)||0).toLocaleString('vi-VN')}</td></tr>`);
+                    tb.insertAdjacentHTML('beforeend', `<tr><td style="text-align:center;"><input type="checkbox" class="chk-hang" value="${indexGoc}"></td><td><strong>${ten}</strong><span class="sn-text">SN: ${don.maSerial || ''}</span></td><td>${don.loaiLinhKien || ''}</td><td style="text-align:right;">${(parseInt(don.giaBan)||0).toLocaleString('vi-VN')}</td></tr>`);
                 }
             });
         }
@@ -238,9 +243,11 @@
 
     function goLoiBongMa(idx) {
         if(confirm("Linh kiện này đang bị kẹt tem ảo. Bấm OK để hệ thống lột bỏ tem lỗi!")) {
-            delete duLieuKho[idx].maHoaDon;
-            delete duLieuKho[idx].ngayXuatBill;
-            khoRef.set(duLieuKho).then(() => showToast("✅ Đã gỡ kẹt thành công!"));
+            if(duLieuKho[idx]) {
+                delete duLieuKho[idx].maHoaDon;
+                delete duLieuKho[idx].ngayXuatBill;
+                khoRef.set(duLieuKho).then(() => showToast("✅ Đã gỡ kẹt thành công!"));
+            }
         }
     }
 
@@ -256,6 +263,11 @@
         tb.innerHTML = '';
         let count = 0;
         
+        if (!lichSuBills) {
+            tb.innerHTML = `<tr><td colspan="5" class="empty-state">Không tìm thấy hóa đơn nào.</td></tr>`;
+            return;
+        }
+
         let keys = Object.keys(lichSuBills).sort((a, b) => {
             let numA = parseInt(a.replace('SON', '')) || 0;
             let numB = parseInt(b.replace('SON', '')) || 0;
@@ -264,8 +276,14 @@
 
         keys.forEach(key => {
             let bill = lichSuBills[key];
-            // V10.19: Bơm biến giảm xóc (bill.xxx || '') chống crash khi Firebase xóa dữ liệu trống
-            if ((bill.tenKH || '').toLowerCase().includes(search) || (bill.sdtKH || '').includes(search) || key.toLowerCase().includes(search)) {
+            if (!bill) return;
+
+            // THUẬT TOÁN V10.19: BƠM BIẾN GIẢM XÓC KHI CHƯA NHẬP SĐT
+            let tenKH = String(bill.tenKH || '').toLowerCase();
+            let sdtKH = String(bill.sdtKH || '').toLowerCase();
+            let keyLower = String(key).toLowerCase();
+
+            if (tenKH.includes(search) || sdtKH.includes(search) || keyLower.includes(search)) {
                 count++;
                 tb.insertAdjacentHTML('beforeend', `
                     <tr>
@@ -284,7 +302,7 @@
     }
 
     function taoMaBillMoi() {
-        let existingNums = Object.keys(lichSuBills)
+        let existingNums = Object.keys(lichSuBills || {})
             .filter(k => k.startsWith('SON'))
             .map(k => parseInt(k.replace('SON', '')))
             .filter(n => !isNaN(n));
@@ -313,7 +331,7 @@
         
         let mangIn = [];
         checkboxes.forEach(chk => {
-            let idx = parseInt(chk.value);
+            let idx = chk.value;
             if(duLieuKho[idx]) mangIn.push(duLieuKho[idx]); 
         });
 
@@ -329,7 +347,7 @@
         let checkboxes = document.querySelectorAll('.chk-hang:checked');
         if (checkboxes.length === 0) return showToast("❌ Chọn linh kiện!", true);
 
-        let tenKH = document.getElementById('khTen').value.trim();
+        let tenKH = document.getElementById('khTen').value.trim() || 'Khách vãng lai';
         let sdtKH = document.getElementById('khSDT').value.trim();
         let dcKH = document.getElementById('khDiaChi').value.trim();
         let saleKH = document.getElementById('khSale').value.trim();
@@ -342,7 +360,7 @@
         
         let mangIn = [];
         checkboxes.forEach(chk => {
-            let idx = parseInt(chk.value);
+            let idx = chk.value;
             if(duLieuKho[idx]) {
                 duLieuKho[idx].maHoaDon = maBill;
                 duLieuKho[idx].ngayXuatBill = thoiGianXuat;
@@ -372,6 +390,7 @@
         if(!data || !data.items) return;
         let grouped = {};
         data.items.forEach(d => {
+            if(!d) return;
             let key = d.tenChinhThuc + '_' + d.tinhTrang;
             if(!grouped[key]) grouped[key] = { 
                 ten: d.tenChinhThuc, 
@@ -381,7 +400,7 @@
                 sn: [],
                 loai: d.loaiLinhKien 
             };
-            grouped[key].sl++; grouped[key].sn.push(d.maSerial);
+            grouped[key].sl++; grouped[key].sn.push(d.maSerial || '');
         });
 
         const thuTuChuan = {
