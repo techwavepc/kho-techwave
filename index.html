@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <title>TechWave PC - Quản Lý Kho (V9.30 - Display & Focus)</title>
+    <style>
+        :root { --primary: #00d2ff; --secondary: #d946ef; --bg: #0f172a; --card-bg: #111827; --form-bg: #1e293b; --text: #e2e8f0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--bg); padding: 20px; color: var(--text); margin: 0; min-height: 100vh; }
+        .container { max-width: 1600px; margin: auto; background: var(--card-bg); padding: 30px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.05); box-shadow: 0 10px 50px rgba(0,0,0,0.5); }
+        
+        h2 { text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 20px; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; color: var(--primary); text-shadow: 0 0 10px rgba(0, 210, 255, 0.3); }
+        
+        /* Navigation */
+        .nav-menu { position: fixed; top: 20px; left: 20px; z-index: 9999; display: flex; gap: 10px; }
+        .nav-btn { color: #fff; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .nav-btn:hover { transform: translateY(-2px); filter: brightness(1.2); }
+
+        /* Form Styling */
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-card { background: var(--form-bg); padding: 20px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.03); flex: 1; display: flex; flex-direction: column; gap: 15px; }
+        .form-group { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+        input, select { padding: 12px 15px; background: var(--bg); color: #fff; border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; outline: none; font-size: 13px; transition: 0.3s; box-sizing: border-box; }
+        input:focus { border-color: var(--primary); box-shadow: 0 0 8px rgba(0, 210, 255, 0.2); }
+        
+        /* Buttons */
+        .btn-save { background: #0284c7; color: #fff; border: none; padding: 12px 25px; cursor: pointer; border-radius: 6px; font-weight: bold; transition: 0.2s; }
+        .btn-add-more { background: #10b981; color: #fff; border: none; padding: 6px 12px; cursor: pointer; border-radius: 6px; font-weight: bold; transition: 0.2s; font-size: 11px; margin-right: 5px; }
+        .btn-update-all { background: #f59e0b; color: #000; border: none; padding: 12px 25px; cursor: pointer; border-radius: 6px; font-weight: bold; display: none; }
+        .btn-cancel { background: #64748b; color: #fff; border: none; padding: 12px 25px; cursor: pointer; border-radius: 6px; font-weight: bold; display: none; }
+        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+        /* Quét Lô */
+        #khuVucQuet { width: 100%; background: rgba(234, 179, 8, 0.05); padding: 15px; border-radius: 8px; border: 1px solid rgba(234, 179, 8, 0.3); color: #fbbf24; margin-top: 10px; box-sizing: border-box; display: none; }
+        .tag-serial-quet { display: inline-block; background: rgba(234, 179, 8, 0.2); border: 1px solid rgba(234, 179, 8, 0.4); padding: 4px 10px; border-radius: 4px; font-size: 11px; margin: 4px; color: #fff; }
+
+        /* Dashboard Tương Tác */
+        .dashboard { display: flex; gap: 20px; margin-bottom: 25px; }
+        .dash-card { flex: 1; background: var(--form-bg); padding: 15px 20px; border-radius: 10px; border: 2px solid rgba(255,255,255,0.03); text-align: center; cursor: pointer; transition: 0.3s; }
+        .dash-card:hover { transform: translateY(-3px); border-color: rgba(255,255,255,0.2); }
+        .dash-card.active-filter { border-color: var(--primary); background: rgba(0, 210, 255, 0.05); box-shadow: 0 5px 20px rgba(0, 210, 255, 0.1); }
+        .dash-val { font-size: 28px; font-weight: 900; font-family: monospace; display: block; }
+        .dash-label { font-size: 11px; text-transform: uppercase; color: #94a3b8; font-weight: bold; margin-top: 5px; display: block; }
+
+        /* Table Styling */
+        .toolbar { display: flex; gap: 10px; margin-bottom: 15px; align-items: center; }
+        table { width: 100%; border-collapse: collapse; background: transparent; }
+        th { background: #1e293b; color: var(--primary); text-transform: uppercase; font-size: 11px; letter-spacing: 1px; padding: 15px 10px; text-align: center; position: sticky; top: 0; z-index: 2; }
+        td { padding: 14px 10px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; transition: 0.3s; }
+        
+        .group-master { cursor: pointer; background: rgba(255,255,255,0.01); transition: 0.2s; }
+        .group-master:hover { background: rgba(255,255,255,0.05); }
+        .child-row { background: rgba(0,0,0,0.3); font-size: 12px; } 
+        
+        .out-of-stock { opacity: 0.4; filter: grayscale(100%); }
+        .out-of-stock:hover { opacity: 0.8; filter: grayscale(30%); }
+
+        .tag-serial { color: #fbbf24; font-family: monospace; font-weight: bold; letter-spacing: 1px; }
+        .tag-ncc { color: #10b981; font-size: 11px; display: block; margin-top: 4px; }
+        
+        .select-status { background: rgba(0,0,0,0.5); color: #fff; border: 1px solid rgba(255,255,255,0.2); padding: 6px 10px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; outline: none; }
+        .select-status.st-ton { color: #4ade80; border-color: rgba(74,222,128,0.4); }
+        .select-status.st-ban { color: #f87171; border-color: rgba(248,113,113,0.4); }
+        .select-status option { background: #1e293b; color: #fff; }
+        
+        .btn-edit-child { background: none; border: 1px solid #fbbf24; color: #fbbf24; padding: 6px 12px; font-size: 10px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-right: 5px; transition: 0.2s; }
+        .btn-edit-child:hover { background: rgba(251, 191, 36, 0.2); }
+        .btn-del-child { background: none; border: 1px solid #f87171; color: #f87171; padding: 6px 12px; font-size: 10px; font-weight: bold; border-radius: 4px; cursor: pointer; transition: 0.2s; }
+        .btn-del-child:hover { background: rgba(248, 113, 113, 0.2); }
+
+        #status-mang { position: fixed; bottom: 15px; right: 15px; padding: 6px 12px; border-radius: 6px; font-size: 11px; background: #000; border: 1px solid var(--primary); }
+        .online { color: #4ade80; } .offline { color: #f87171; }
+        #thongBaoToast { position: fixed; top: 25px; right: 25px; background: #10b981; color: #fff; padding: 15px 25px; border-radius: 8px; font-weight: bold; z-index: 9999; display: none; box-shadow: 0 5px 20px rgba(0,0,0,0.5); }
+    </style>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+
+<div class="nav-menu">
+    <a href="index.html" class="nav-btn" style="background:#2563eb;">📦 KHO LINH KIỆN</a>
+    <a href="hoadon.html" class="nav-btn" style="background:#059669;">🧾 TRANG KẾ TOÁN</a>
+</div>
+
+<div id="status-mang">🔄 Đang kết nối...</div>
+<div id="thongBaoToast">✅ Cập nhật thành công!</div>
+
+<div class="container">
+    <h2 style="margin-top: 40px;">HỆ THỐNG QUẢN LÝ KHO TECHWAVE PC</h2>
+    
+    <div class="dashboard">
+        <div class="dash-card active-filter" id="cardTon" onclick="setLocTrangThai('Tồn kho')">
+            <span class="dash-val" id="countTon" style="color:#4ade80">0</span><span class="dash-label">Đang tồn kho</span>
+        </div>
+        <div class="dash-card" id="cardBan" onclick="setLocTrangThai('Đã bán')">
+            <span class="dash-val" id="countBan" style="color:#f87171">0</span><span class="dash-label">Đã xuất kho</span>
+        </div>
+        <div class="dash-card" id="cardTong" onclick="setLocTrangThai('Tất cả')">
+            <span class="dash-val" id="countTong" style="color:var(--primary)">0</span><span class="dash-label">Tổng linh kiện</span>
+        </div>
+    </div>
+
+    <form id="formKho">
+        <div class="form-row">
+            <div class="form-card">
+                <div class="form-group">
+                    <input type="text" id="tenSP" placeholder="Tên sản phẩm chi tiết..." required style="flex: 2;">
+                    <input type="text" id="maSKU" placeholder="Mã SKU (Tùy chọn)">
+                    <input type="text" id="nhaCungCap" placeholder="Nhà cung cấp (VD: SPC, Mai Hoàng)..." style="flex: 1.5; border-color: #10b981;">
+                    
+                    <select id="loaiLinhKien" onchange="logicPhanLoai()">
+                        <option value="Main">Main</option><option value="CPU">CPU</option>
+                        <option value="RAM">RAM</option><option value="VGA">VGA</option>
+                        <option value="Nguồn">Nguồn</option><option value="Tản">Tản</option>
+                        <option value="Ổ cứng">Ổ cứng</option><option value="Vỏ">Vỏ Case</option>
+                        <option value="Màn hình">Màn hình</option> <option value="Phím">Bàn phím</option><option value="Chuột">Chuột</option>
+                        <option value="Tai nghe">Tai nghe</option><option value="Phụ kiện">Phụ kiện</option>
+                    </select>
+                    <select id="phanLoai"></select>
+                    <select id="hangSanXuat" onchange="kiemTraHangKhac()"></select>
+                    <input type="text" id="hangKhacText" placeholder="Nhập hãng khác..." style="display: none; border-color: #fbbf24; flex: 1;">
+                </div>
+            </div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-card">
+                <div class="form-group">
+                    <select id="tinhTrang">
+                        <option value="Mới 100%">Mới 100%</option><option value="Like New 99%">Like New 99%</option>
+                        <option value="Cũ còn bảo hành">Cũ còn bảo hành</option><option value="Cũ hết bảo hành">Cũ hết bảo hành</option>
+                    </select>
+                    <input type="date" id="ngayNhap">
+                    <input type="text" id="giaNhap" placeholder="Giá nhập" oninput="formatTienNay(this)">
+                    <input type="text" id="giaBan" placeholder="Giá bán" oninput="formatTienNay(this)">
+                    
+                    <div style="flex: 1.5; display: flex; gap: 5px; min-width: 300px; align-items: center;">
+                        <input type="number" id="soLuongNhap" value="1" min="1" style="max-width: 70px; text-align: center; font-weight: bold; color: var(--primary);" title="Số lượng">
+                        <select id="selectSerialSua" style="display: none; width: 130px; border-color: #fbbf24;" onchange="doiSerialSua()"></select>
+                        <input type="text" id="maSerial" placeholder="Quét Serial tại đây..." style="flex: 1; border: 1px solid #10b981;">
+                    </div>
+                </div>
+                
+                <div id="khuVucQuet">
+                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                        <strong>Đang quét lô: </strong> <span id="tienDoText" style="font-size: 18px; margin-left: 10px; font-weight: bold; font-family: monospace;">0/1</span>
+                        <button type="button" onclick="huyQuetLo()" style="margin-left: 15px; background: rgba(248, 113, 113, 0.2); border: 1px solid rgba(248, 113, 113, 0.4); color: #f87171; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;">HỦY QUÉT</button>
+                    </div>
+                    <div id="danhSachMaDaQuet"></div>
+                </div>
+
+                <div style="display:flex; gap:10px; margin-top:5px;">
+                    <button type="button" class="btn-save" id="btnLuu" onclick="xuLyLuu()">LƯU DỮ LIỆU</button>
+                    <button type="button" class="btn-update-all" id="btnUpdateAll" onclick="capNhatHangLoat()">CẬP NHẬT TOÀN NHÓM</button>
+                    <button type="button" class="btn-cancel" id="btnHuy" onclick="resetFormNay()">HỦY</button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <div class="toolbar" style="margin-top: 25px;">
+        <select id="locLoai" onchange="hienThi()" style="flex:0.2">
+            <option value="Tất cả">Tất cả loại</option>
+            <option value="Main">Main</option><option value="CPU">CPU</option>
+            <option value="VGA">VGA</option><option value="RAM">RAM</option>
+            <option value="Màn hình">Màn hình</option>
+            <option value="Phím">Bàn phím</option><option value="Chuột">Chuột</option>
+        </select>
+        <input type="search" id="oTimKiem" oninput="hienThi()" placeholder="🔍 Tìm kiếm nhanh tên, serial, nhà cung cấp..." style="flex:1">
+    </div>
+
+    <table id="mainTable">
+        <thead>
+            <tr>
+                <th style="text-align:left; padding-left:25px; width:25%;">Thông tin Sản Phẩm</th>
+                <th style="width:15%;">Phân loại / Hãng</th>
+                <th style="width:15%;">Tình Trạng</th>
+                <th style="width:15%;">Kho hàng</th>
+                <th style="width:15%;">Giá Bán</th>
+                <th style="width:15%;">Thao Tác</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+</div>
+
+<script>
+    const firebaseConfig = {
+        apiKey: "AIzaSyDV_mvyekipLJFcUX_uxQzEV1P9CbE81J0",
+        authDomain: "quan-ly-kho-fbb28.firebaseapp.com",
+        databaseURL: "https://quan-ly-kho-fbb28-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "quan-ly-kho-fbb28",
+        storageBucket: "quan-ly-kho-fbb28.firebasestorage.app"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database().ref('KhoLinhKienPC');
+    let duLieuKho = []; let dangSuaIdx = -1;
+    let cacNhomDangMo = new Set(); 
+    
+    // BIẾN NÀY ĐÃ ĐƯỢC CHUYỂN THÀNH 'Tồn kho' MẶC ĐỊNH
+    let cheDoLocTrangThai = 'Tồn kho'; 
+    
+    let mangQuetTam = [];
+
+    function khauTrangTelex(s) {
+        const m = {'á':'as','à':'af','ả':'ar','ã':'ax','ạ':'aj','ă':'aw','â':'aa','é':'es','è':'ef','ẻ':'er','ẽ':'ex','ẹ':'ej','ê':'ee','í':'is','ì':'if','ỉ':'ir','ĩ':'ix','ị':'ij','ó':'os','ò':'of','ỏ':'or','õ':'ox','ọ':'oj','ô':'oo','ơ':'ow','ú':'us','ù':'uf','ủ':'ur','ũ':'ux','ụ':'uj','ư':'uw','ý':'ys','ỳ':'yf','ỷ':'yr','ỹ':'yx','ỵ':'yj','đ':'dd'};
+        return s.split('').map(c => m[c] || c).join('').toUpperCase();
+    }
+    
+    document.getElementById('maSerial').addEventListener('input', function(){ this.value = khauTrangTelex(this.value); });
+    
+    document.getElementById('maSerial').addEventListener('keypress', e => { 
+        if(e.key==='Enter') { 
+            e.preventDefault(); 
+            let sl = parseInt(document.getElementById('soLuongNhap').value) || 1;
+            let val = e.target.value.trim();
+            if(!val) return;
+
+            if(dangSuaIdx > -1) {
+                xuLyLuu();
+            } else {
+                if(sl === 1) {
+                    xuLyLuu();
+                } else {
+                    if(mangQuetTam.includes(val)) {
+                        showToast("Mã này vừa quét rồi!");
+                        e.target.value = ''; return;
+                    }
+                    mangQuetTam.push(val);
+                    document.getElementById('khuVucQuet').style.display = 'block';
+                    document.getElementById('danhSachMaDaQuet').insertAdjacentHTML('beforeend', `<span class="tag-serial-quet">${mangQuetTam.length}. ${val}</span>`);
+                    document.getElementById('tienDoText').innerText = `${mangQuetTam.length}/${sl}`;
+                    e.target.value = ''; 
+                    
+                    if(mangQuetTam.length === sl) xuLyLuu(); 
+                }
+            }
+        }
+    });
+
+    function formatTienNay(i){ let v = i.value.replace(/\D/g,''); i.value = v ? parseInt(v).toLocaleString('vi-VN') : ''; }
+    
+    function showToast(msg) {
+        const t = document.getElementById('thongBaoToast');
+        t.innerText = msg; t.style.display = 'block';
+        setTimeout(() => t.style.display = 'none', 3000);
+    }
+
+    function setLocTrangThai(trangThai) {
+        cheDoLocTrangThai = trangThai;
+        document.querySelectorAll('.dash-card').forEach(el => el.classList.remove('active-filter'));
+        if(trangThai === 'Tồn kho') document.getElementById('cardTon').classList.add('active-filter');
+        else if(trangThai === 'Đã bán') document.getElementById('cardBan').classList.add('active-filter');
+        else document.getElementById('cardTong').classList.add('active-filter');
+        hienThi();
+    }
+
+    function kiemTraHangKhac() {
+        const h = document.getElementById('hangSanXuat').value;
+        const inputKhac = document.getElementById('hangKhacText');
+        if (h === 'Khác') {
+            inputKhac.style.display = 'inline-block'; inputKhac.focus();
+        } else {
+            inputKhac.style.display = 'none'; inputKhac.value = '';
+        }
+    }
+
+    function logicPhanLoai() {
+        const l = document.getElementById('loaiLinhKien').value;
+        const p = document.getElementById('phanLoai');
+        const h = document.getElementById('hangSanXuat');
+        
+        p.innerHTML = '<option value="-">-</option>'; p.disabled = true;
+
+        if(l==='CPU') {
+            p.innerHTML = '<option value="Intel">Intel</option><option value="AMD">AMD</option>';
+            p.disabled = false; h.style.display = 'none';
+        } else {
+            h.style.display = 'inline-block';
+            if(l==='Main') {
+                p.innerHTML = '<option value="Intel">Intel</option><option value="AMD">AMD</option>'; p.disabled = false;
+                h.innerHTML = '<option value="ASUS">ASUS</option><option value="GIGABYTE">GIGABYTE</option><option value="MSI">MSI</option><option value="ASRock">ASRock</option><option value="Khác">Khác</option>';
+            } else if(l==='VGA') {
+                p.innerHTML = '<option value="Nvidia">Nvidia</option><option value="AMD">AMD</option>'; p.disabled = false;
+                h.innerHTML = '<option value="ASUS">ASUS</option><option value="MSI">MSI</option><option value="Gigabyte">Gigabyte</option><option value="Zotac">Zotac</option><option value="Colorful">Colorful</option><option value="Khác">Khác</option>';
+            } else if(l==='Màn hình') {
+                h.innerHTML = '<option value="Dell">Dell</option><option value="ASUS">ASUS</option><option value="LG">LG</option><option value="Samsung">Samsung</option><option value="HKC">HKC</option><option value="AOC">AOC</option><option value="Gigabyte">Gigabyte</option><option value="MSI">MSI</option><option value="Khác">Khác</option>';
+            } else if(l==='Phím' || l==='Chuột' || l==='Tai nghe') {
+                h.innerHTML = '<option value="Logitech">Logitech</option><option value="Razer">Razer</option><option value="Akko">Akko</option><option value="Dareu">Dareu</option><option value="Corsair">Corsair</option><option value="Fuhlen">Fuhlen</option><option value="Khác">Khác</option>';
+            } else if(l==='Phụ kiện') {
+                h.innerHTML = '<option value="Lót chuột">Lót chuột</option><option value="Dây cáp">Dây cáp</option><option value="Giá đỡ">Giá đỡ</option><option value="Fan Case">Fan Case</option><option value="Khác">Khác</option>';
+            } else {
+                h.innerHTML = '<option value="Samsung">Samsung</option><option value="Corsair">Corsair</option><option value="Kingston">Kingston</option><option value="Xigmatek">Xigmatek</option><option value="Khác">Khác</option>';
+            }
+        }
+        kiemTraHangKhac();
+    }
+
+    db.on('value', s => { 
+        duLieuKho = s.val() || []; 
+        hienThi(); capNhatDashboard();
+    });
+
+    function capNhatDashboard() {
+        let t = duLieuKho.length;
+        let ton = duLieuKho.filter(x => x.trangThai === 'Tồn kho').length;
+        let ban = t - ton;
+        document.getElementById('countTon').innerText = ton;
+        document.getElementById('countBan').innerText = ban;
+        document.getElementById('countTong').innerText = t;
+    }
+
+    function hienThi() {
+        const tb = document.querySelector('#mainTable tbody'); tb.innerHTML = '';
+        const tk = document.getElementById('oTimKiem').value.toLowerCase();
+        const loc = document.getElementById('locLoai').value;
+        let groups = {};
+
+        duLieuKho.forEach((d, i) => {
+            const matchSearch = (d.tenSP + d.maSerial + d.hangSanXuat + (d.nhaCungCap||'')).toLowerCase().includes(tk);
+            const matchLoc = (loc === 'Tất cả' || d.loaiLinhKien === loc);
+            if(matchSearch && matchLoc) {
+                let k = d.tenSP; 
+                if(!groups[k]) groups[k] = { info: d, items: [], ton: 0, daban: 0, setTT: new Set(), setGia: new Set() };
+                groups[k].items.push({ d, i });
+                if(d.trangThai === 'Tồn kho') groups[k].ton++; else groups[k].daban++;
+                groups[k].setTT.add(d.tinhTrang);
+                groups[k].setGia.add(d.giaBan);
+            }
+        });
+
+        Object.keys(groups).forEach((k, gIdx) => {
+            let g = groups[k]; let inf = g.info;
+            if (cheDoLocTrangThai === 'Tồn kho' && g.ton === 0) return; 
+            if (cheDoLocTrangThai === 'Đã bán' && g.daban === 0) return; 
+
+            let textTT = g.setTT.size === 1 ? Array.from(g.setTT)[0] : 'Nhiều tình trạng';
+            let textGia = g.setGia.size === 1 ? (parseInt(Array.from(g.setGia)[0])||0).toLocaleString('vi-VN') : 'Nhiều mức giá';
+            let classOOS = g.ton === 0 ? 'out-of-stock' : '';
+            let safeKey = encodeURIComponent(k);
+            let isExpanded = cacNhomDangMo.has(safeKey);
+
+            tb.insertAdjacentHTML('beforeend', `
+                <tr class="group-master ${classOOS}" onclick="toggleGrp(${gIdx}, '${safeKey}')">
+                    <td style="text-align:left; padding-left:25px;">
+                        <span style="color:var(--primary)">▶</span> <b>${inf.tenSP}</b><br>
+                        <small style="color:#64748b">SKU: ${inf.maSKU||'-'}</small>
+                    </td>
+                    <td>${inf.loaiLinhKien} ${inf.loaiLinhKien==='CPU'?'':'- '+inf.hangSanXuat}</td>
+                    <td style="color:#fbbf24; font-weight:bold">${textTT}</td>
+                    <td style="font-weight:bold; color:#e2e8f0;">
+                        📦 Tồn: <span style="color:#4ade80; font-size:14px;">${g.ton}</span> <span style="color:#64748b; font-weight:normal;">/</span> <span style="color:var(--primary); font-size:14px;">${g.items.length}</span>
+                    </td>
+                    <td style="color:var(--primary); font-weight:bold;">${textGia}</td>
+                    <td>
+                        <button class="btn-add-more" onclick="event.stopPropagation(); nhapThem(${g.items[0].i})">➕ NHẬP THÊM</button>
+                        <button class="btn-save" style="padding:6px 10px; font-size:11px" onclick="event.stopPropagation(); suaDong(${g.items[0].i}, true)">SỬA NHÓM</button>
+                    </td>
+                </tr>
+            `);
+            
+            g.items.forEach(item => {
+                let isDaban = item.d.trangThai === 'Đã bán';
+                
+                if (cheDoLocTrangThai === 'Tồn kho' && isDaban) return; 
+                if (cheDoLocTrangThai === 'Đã bán' && !isDaban) return; 
+
+                tb.insertAdjacentHTML('beforeend', `
+                    <tr class="child-row grp-${gIdx}" style="display: ${isExpanded ? 'table-row' : 'none'};">
+                        <td colspan="2" style="text-align:right; color:#64748b; padding-right:20px;">
+                            ∟ Mã Serial: <span class="tag-serial">${item.d.maSerial}</span><br>
+                            <span class="tag-ncc">NCC: ${item.d.nhaCungCap || 'Chưa cập nhật'}</span>
+                        </td>
+                        <td style="color:#cbd5e1;">${item.d.tinhTrang}</td>
+                        <td>
+                            <select class="select-status ${isDaban ? 'st-ban' : 'st-ton'}" onchange="doiTrangThaiNhanh(${item.i}, this)">
+                                <option value="Tồn kho" ${!isDaban ? 'selected' : ''}>🟢 TRONG KHO</option>
+                                <option value="Đã bán" ${isDaban ? 'selected' : ''}>🔴 ĐÃ XUẤT KHO</option>
+                            </select>
+                        </td>
+                        <td style="color:#00d2ff;">${(parseInt(item.d.giaBan)||0).toLocaleString('vi-VN')}</td>
+                        <td>
+                            <button class="btn-edit-child" onclick="suaDong(${item.i}, false)">SỬA MÃ</button>
+                            <button class="btn-del-child" onclick="xoaDon(${item.i})">XÓA</button>
+                        </td>
+                    </tr>
+                `);
+            });
+        });
+    }
+
+    function toggleGrp(id, safeKey){ 
+        const rows = document.querySelectorAll('.grp-'+id); 
+        let isExpanding = false;
+        rows.forEach(r => { 
+            if(r.style.display === 'none') { r.style.display = 'table-row'; isExpanding = true; }
+            else { r.style.display = 'none'; }
+        });
+        if(isExpanding) cacNhomDangMo.add(safeKey); else cacNhomDangMo.delete(safeKey);
+    }
+
+    function doiTrangThaiNhanh(idx, el) {
+        let v = el.value; duLieuKho[idx].trangThai = v;
+        if(v === 'Đã bán') { 
+            let n = new Date(); 
+            duLieuKho[idx].ngayBan = `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')} - ${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`;
+        } else {
+            duLieuKho[idx].ngayBan = '';
+            delete duLieuKho[idx].maHoaDon; delete duLieuKho[idx].ngayXuatBill;
+            delete duLieuKho[idx].tenKH; delete duLieuKho[idx].sdtKH; delete duLieuKho[idx].dcKH;
+            delete duLieuKho[idx].saleKH; delete duLieuKho[idx].noteKH;
+        }
+        db.set(duLieuKho).then(() => showToast("Cập nhật trạng thái thành công!"));
+    }
+
+    function huyQuetLo() {
+        mangQuetTam = [];
+        document.getElementById('khuVucQuet').style.display = 'none';
+        document.getElementById('danhSachMaDaQuet').innerHTML = '';
+        document.getElementById('tienDoText').innerText = '0/1';
+        document.getElementById('maSerial').value = '';
+        document.getElementById('maSerial').focus();
+    }
+
+    function resetFormNay() {
+        document.getElementById('formKho').reset(); 
+        dangSuaIdx = -1; mangQuetTam = [];
+        document.getElementById('btnHuy').style.display = 'none';
+        document.getElementById('btnUpdateAll').style.display = 'none';
+        document.getElementById('selectSerialSua').style.display = 'none';
+        document.getElementById('hangKhacText').style.display = 'none'; 
+        document.getElementById('soLuongNhap').disabled = false; 
+        document.getElementById('khuVucQuet').style.display = 'none';
+        document.getElementById('danhSachMaDaQuet').innerHTML = '';
+        document.getElementById('tienDoText').innerText = '0/1';
+        document.getElementById('btnLuu').innerText = "LƯU DỮ LIỆU";
+        logicPhanLoai();
+        document.getElementById('ngayNhap').value = new Date().toISOString().split('T')[0];
+    }
+
+    function nhapThem(i) {
+        let d = duLieuKho[i];
+        document.getElementById('tenSP').value = d.tenSP;
+        document.getElementById('maSKU').value = d.maSKU || '';
+        document.getElementById('nhaCungCap').value = d.nhaCungCap || ''; 
+        document.getElementById('loaiLinhKien').value = d.loaiLinhKien; logicPhanLoai(); 
+        document.getElementById('phanLoai').value = d.phanLoai;
+        
+        if(d.loaiLinhKien !== 'CPU') {
+            let hSelect = document.getElementById('hangSanXuat');
+            let optExists = Array.from(hSelect.options).some(o => o.value === d.hangSanXuat);
+            if(optExists) hSelect.value = d.hangSanXuat; else hSelect.value = 'Khác';
+            kiemTraHangKhac();
+            if(!optExists) document.getElementById('hangKhacText').value = d.hangSanXuat;
+        }
+
+        document.getElementById('tinhTrang').value = d.tinhTrang;
+        document.getElementById('giaNhap').value = (parseInt(d.giaNhap)||0).toLocaleString('vi-VN');
+        document.getElementById('giaBan').value = (parseInt(d.giaBan)||0).toLocaleString('vi-VN');
+        
+        document.getElementById('maSerial').value = '';
+        document.getElementById('soLuongNhap').value = 1;
+        document.getElementById('soLuongNhap').disabled = false;
+        document.getElementById('ngayNhap').value = new Date().toISOString().split('T')[0];
+        
+        dangSuaIdx = -1; 
+        document.getElementById('btnHuy').style.display = 'inline-block';
+        document.getElementById('btnUpdateAll').style.display = 'none';
+        document.getElementById('selectSerialSua').style.display = 'none';
+        document.getElementById('btnLuu').innerText = "LƯU DỮ LIỆU";
+        
+        window.scrollTo(0,0); document.getElementById('maSerial').focus();
+        showToast("Đã copy dữ liệu! Nhập số lượng và quét Serial.");
+    }
+
+    function xuLyLuu() {
+        let ten = document.getElementById('tenSP').value.trim();
+        let sn = document.getElementById('maSerial').value.trim();
+        let ncc = document.getElementById('nhaCungCap').value.trim();
+        let sl = parseInt(document.getElementById('soLuongNhap').value) || 1;
+        
+        let valHang = document.getElementById('hangSanXuat').value;
+        if(valHang === 'Khác') valHang = document.getElementById('hangKhacText').value.trim() || 'Hãng lạ';
+
+        if(dangSuaIdx > -1) {
+            if(!ten || !sn) return alert("Vui lòng nhập Tên và Serial!");
+            duLieuKho[dangSuaIdx].tenSP = ten;
+            duLieuKho[dangSuaIdx].maSerial = sn;
+            duLieuKho[dangSuaIdx].nhaCungCap = ncc;
+            duLieuKho[dangSuaIdx].maSKU = document.getElementById('maSKU').value;
+            duLieuKho[dangSuaIdx].giaNhap = document.getElementById('giaNhap').value.replace(/\D/g,'');
+            duLieuKho[dangSuaIdx].giaBan = document.getElementById('giaBan').value.replace(/\D/g,'');
+            duLieuKho[dangSuaIdx].ngayNhap = document.getElementById('ngayNhap').value;
+            duLieuKho[dangSuaIdx].tinhTrang = document.getElementById('tinhTrang').value;
+            duLieuKho[dangSuaIdx].loaiLinhKien = document.getElementById('loaiLinhKien').value;
+            duLieuKho[dangSuaIdx].phanLoai = document.getElementById('phanLoai').value;
+            duLieuKho[dangSuaIdx].hangSanXuat = valHang;
+        } else {
+            if(!ten) return alert("Vui lòng nhập Tên Sản Phẩm!");
+            let baseData = {
+                tenSP: ten, maSKU: document.getElementById('maSKU').value,
+                nhaCungCap: ncc,
+                loaiLinhKien: document.getElementById('loaiLinhKien').value,
+                phanLoai: document.getElementById('phanLoai').value,
+                hangSanXuat: valHang,
+                tinhTrang: document.getElementById('tinhTrang').value,
+                ngayNhap: document.getElementById('ngayNhap').value,
+                giaNhap: document.getElementById('giaNhap').value.replace(/\D/g,''),
+                giaBan: document.getElementById('giaBan').value.replace(/\D/g,''),
+                trangThai: 'Tồn kho'
+            };
+
+            if(sl === 1) {
+                if(!sn) return alert("Vui lòng quét Serial!");
+                duLieuKho.push({...baseData, maSerial: sn});
+            } else {
+                if(mangQuetTam.length < sl) return alert(`Vui lòng quét đủ ${sl} mã Serial!`);
+                mangQuetTam.forEach(m => { duLieuKho.push({...baseData, maSerial: m}); });
+            }
+        }
+        db.set(duLieuKho).then(() => { showToast("Đã lưu dữ liệu!"); resetFormNay(); });
+    }
+
+    function suaDong(i, isGroup) {
+        let d = duLieuKho[i];
+        document.getElementById('tenSP').value = d.tenSP;
+        document.getElementById('maSKU').value = d.maSKU || '';
+        document.getElementById('nhaCungCap').value = d.nhaCungCap || '';
+        document.getElementById('loaiLinhKien').value = d.loaiLinhKien; logicPhanLoai();
+        document.getElementById('phanLoai').value = d.phanLoai;
+        
+        if(d.loaiLinhKien !== 'CPU') {
+            let hSelect = document.getElementById('hangSanXuat');
+            let optExists = Array.from(hSelect.options).some(o => o.value === d.hangSanXuat);
+            if(optExists) hSelect.value = d.hangSanXuat; else hSelect.value = 'Khác';
+            kiemTraHangKhac();
+            if(!optExists) document.getElementById('hangKhacText').value = d.hangSanXuat;
+        }
+
+        document.getElementById('tinhTrang').value = d.tinhTrang;
+        document.getElementById('giaNhap').value = (parseInt(d.giaNhap)||0).toLocaleString('vi-VN');
+        document.getElementById('giaBan').value = (parseInt(d.giaBan)||0).toLocaleString('vi-VN');
+        document.getElementById('maSerial').value = d.maSerial;
+        document.getElementById('ngayNhap').value = d.ngayNhap;
+        
+        document.getElementById('soLuongNhap').disabled = true; dangSuaIdx = i;
+        let selObj = document.getElementById('selectSerialSua');
+        document.getElementById('btnHuy').style.display = 'inline-block';
+
+        if(isGroup) {
+            let opts = '';
+            duLieuKho.forEach((item, idx) => {
+                if(item.tenSP === d.tenSP) {
+                    opts += `<option value="${idx}" ${idx === i ? 'selected' : ''}>${item.maSerial} (${item.tinhTrang})</option>`;
+                }
+            });
+            selObj.innerHTML = opts; selObj.style.display = 'block'; 
+            document.getElementById('btnUpdateAll').style.display = 'inline-block';
+            document.getElementById('btnLuu').innerText = "CẬP NHẬT 1 MÃ";
+        } else {
+            selObj.style.display = 'none'; document.getElementById('btnUpdateAll').style.display = 'none'; 
+            document.getElementById('btnLuu').innerText = "CẬP NHẬT MÃ NÀY";
+        }
+        window.scrollTo(0,0);
+    }
+
+    function doiSerialSua() {
+        let idx = parseInt(document.getElementById('selectSerialSua').value);
+        dangSuaIdx = idx; let d = duLieuKho[idx];
+        document.getElementById('maSerial').value = d.maSerial;
+        document.getElementById('giaNhap').value = (parseInt(d.giaNhap)||0).toLocaleString('vi-VN');
+        document.getElementById('giaBan').value = (parseInt(d.giaBan)||0).toLocaleString('vi-VN');
+        document.getElementById('ngayNhap').value = d.ngayNhap;
+        document.getElementById('tinhTrang').value = d.tinhTrang;
+        document.getElementById('nhaCungCap').value = d.nhaCungCap || '';
+    }
+
+    function capNhatHangLoat() {
+        if(!confirm("Xác nhận thay đổi thông tin cho TOÀN BỘ sản phẩm có chung Tên này?")) return;
+        let d = duLieuKho[dangSuaIdx]; let tenGoc = d.tenSP; 
+        
+        let mTen = document.getElementById('tenSP').value.trim();
+        let mSKU = document.getElementById('maSKU').value.trim();
+        let mNcc = document.getElementById('nhaCungCap').value.trim();
+        let mGiaN = document.getElementById('giaNhap').value.replace(/\D/g,'');
+        let mGiaB = document.getElementById('giaBan').value.replace(/\D/g,'');
+        let mLoai = document.getElementById('loaiLinhKien').value;
+        let mPhan = document.getElementById('phanLoai').value;
+        let mNgay = document.getElementById('ngayNhap').value;
+        let mTinhTrang = document.getElementById('tinhTrang').value;
+        
+        let mHang = document.getElementById('hangSanXuat').value;
+        if(mHang === 'Khác') mHang = document.getElementById('hangKhacText').value.trim() || 'Hãng lạ';
+
+        duLieuKho.forEach(item => {
+            if(item.tenSP === tenGoc) {
+                item.tenSP = mTen; item.maSKU = mSKU; item.nhaCungCap = mNcc; item.giaNhap = mGiaN; item.giaBan = mGiaB;
+                item.loaiLinhKien = mLoai; item.phanLoai = mPhan; item.hangSanXuat = mHang; 
+                item.ngayNhap = mNgay; item.tinhTrang = mTinhTrang;
+            }
+        });
+        db.set(duLieuKho).then(() => { showToast("Đã cập nhật toàn nhóm!"); resetFormNay(); });
+    }
+
+    function xoaDon(i){ if(confirm("Xóa vĩnh viễn linh kiện này?")) { duLieuKho.splice(i,1); db.set(duLieuKho); }}
+    
+    firebase.database().ref(".info/connected").on("value", s => {
+        const t = document.getElementById('status-mang');
+        if (s.val()) { t.innerHTML = "✅ ONLINE"; t.className = "online"; } else { t.innerHTML = "❌ OFFLINE"; t.className = "offline"; }
+    });
+
+    window.onload = () => { logicPhanLoai(); document.getElementById('ngayNhap').value = new Date().toISOString().split('T')[0]; };
+</script>
+</body>
+</html>
