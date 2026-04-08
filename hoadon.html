@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Kế Toán & Lưu Trữ (V10.19 - Crash Proof)</title>
+    <title>TechWave PC - Kế Toán & Lưu Trữ (V10.20 - Syntax Fixed)</title>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
@@ -179,7 +179,6 @@
         }
     }
 
-    // THUẬT TOÁN V10.19: BỌC THÉP ÉP KIỂU CHUỖI
     function taoTenChinhThuc(don) {
         if (!don) return 'Linh kiện không xác định';
         let tenGoc = String(don.tenSP || '');
@@ -201,7 +200,6 @@
         tb.innerHTML = '';
         let hangDaBanAll = [];
         
-        // THUẬT TOÁN V10.19: SỬ DỤNG OBJECT.KEYS ĐỂ KHÁNG LỖI MẢNG BỊ THỦNG
         if (duLieuKho) {
             Object.keys(duLieuKho).forEach(idx => {
                 let don = duLieuKho[idx];
@@ -278,7 +276,6 @@
             let bill = lichSuBills[key];
             if (!bill) return;
 
-            // THUẬT TOÁN V10.19: BƠM BIẾN GIẢM XÓC KHI CHƯA NHẬP SĐT
             let tenKH = String(bill.tenKH || '').toLowerCase();
             let sdtKH = String(bill.sdtKH || '').toLowerCase();
             let keyLower = String(key).toLowerCase();
@@ -415,8 +412,8 @@
             return idA - idB;
         });
 
-        let isLock = mode === 'tracuu' ? 'readonly style="width:100%; border:none; text-align:center; font-family:\\'Times New Roman\\', serif; font-size:13px; outline:none; background:transparent; pointer-events:none;"' : 'style="width:100%; border:none; text-align:center; font-family:\\'Times New Roman\\', serif; font-size:13px; outline:none; background:transparent;"';
-        let isLockInput = mode === 'tracuu' ? 'readonly style="flex:1;font-family:\\'Times New Roman\\',serif;font-size:13px;border:none;outline:none; pointer-events:none;"' : 'style="flex:1;font-family:\\'Times New Roman\\',serif;font-size:13px;border:none;outline:none;"';
+        let isLock = mode === 'tracuu' ? `readonly style="width:100%; border:none; text-align:center; font-family:'Times New Roman', serif; font-size:13px; outline:none; background:transparent; pointer-events:none;"` : `style="width:100%; border:none; text-align:center; font-family:'Times New Roman', serif; font-size:13px; outline:none; background:transparent;"`;
+        let isLockInput = mode === 'tracuu' ? `readonly style="flex:1;font-family:'Times New Roman',serif;font-size:13px;border:none;outline:none; pointer-events:none;"` : `style="flex:1;font-family:'Times New Roman',serif;font-size:13px;border:none;outline:none;"`;
 
         let rows = ''; let tong = 0; let stt = 1;
         arrGrouped.forEach(g => {
