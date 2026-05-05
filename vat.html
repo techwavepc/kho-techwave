@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Phân Hệ Xuất VAT (V1.2 - All Inventory)</title>
+    <title>TechWave PC - Phân Hệ Xuất VAT (V1.3 - Layout Fixed)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; padding: 20px; color: #e2e8f0; margin: 0; min-height: 100vh; }
         .container { max-width: 1550px; margin: auto; background: #111827; padding: 30px; border-radius: 12px; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5); border: 1px solid rgba(220, 38, 38, 0.2); border-top: 4px solid #ef4444; }
@@ -27,7 +27,8 @@
         .online { color: #4ade80; } .offline { color: #f87171; }
         #thongBaoToast { position: fixed; top: 25px; right: 25px; background: #ef4444; color: #fff; padding: 15px 25px; border-radius: 8px; font-weight: bold; z-index: 9999; display: none; }
         .empty-state { text-align: center; padding: 30px; color: #64748b; font-style: italic;}
-        .search-bill { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #fff; margin-bottom: 10px; font-size: 12px;}
+        .search-bill { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #fff; margin-bottom: 10px; font-size: 12px; box-sizing: border-box;}
+        
         .nav-bar { position: fixed; top: 20px; left: 20px; z-index: 9999; display: flex; gap: 10px; }
         .nav-btn { text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.5); color: #fff; }
         .nav-kho { background: #2563eb; } .nav-ketoan { background: #059669; } .nav-vat { background: #ef4444; border: 2px solid #fff; }
@@ -108,9 +109,10 @@
                     <table id="bangChoIn">
                         <thead><tr>
                             <th style="width: 5%; text-align: center;">Chọn</th>
-                            <th style="width: 45%;">Tên SP (Gốc)</th>
-                            <th style="width: 25%;">Thêm Mã VAT</th>
-                            <th style="width: 25%; text-align: right;">Đơn Giá VAT</th>
+                            <!-- Đã nới rộng cột Tên lên 55% để không bị bí tràn -->
+                            <th style="width: 55%;">Tên SP (Y chang Kho)</th>
+                            <th style="width: 20%;">Mã VAT (Nếu có)</th>
+                            <th style="width: 20%; text-align: right;">Đơn Giá VAT</th>
                         </tr></thead>
                         <tbody></tbody>
                     </table>
@@ -194,18 +196,7 @@
 
     function checkLoadRender() { if(isKhoLoaded && isVatLoaded) { hienThiHangChoIn(); hienThiLichSu(); } }
 
-    function taoTenChinhThuc(don) {
-        if (!don) return 'Linh kiện';
-        let tenGoc = String(don.tenSP || ''); let hang = String((don.hangSanXuat && don.hangSanXuat !== 'Khác') ? don.hangSanXuat : '');
-        let loai = String(don.loaiLinhKien || ''); let tenLoaiTrangTri = (loai === 'Tản') ? 'Tản nhiệt' : (loai === 'Vỏ' ? 'Vỏ Case' : loai);
-        if (loai === 'VGA' && hang !== '') {
-            let parts = tenGoc.split(' ');
-            if (!tenGoc.toLowerCase().includes(hang.toLowerCase()) && parts.length >= 2) return parts[0] + ' ' + parts[1] + ' ' + hang + ' ' + parts.slice(2).join(' ');
-        }
-        return tenGoc.toLowerCase().includes(hang.toLowerCase()) ? tenLoaiTrangTri + ' ' + tenGoc : tenLoaiTrangTri + ' ' + hang + ' ' + tenGoc;
-    }
-
-    // THUẬT TOÁN V1.2: HIỂN THỊ TOÀN BỘ KHO
+    // THUẬT TOÁN V1.3: LẤY TRỰC TIẾP TÊN GỐC TỪ KHO, KHÔNG THÊM BỚT TỪ NGỮ TÀO LAO
     function hienThiHangChoIn() {
         const tb = document.querySelector('#bangChoIn tbody');
         const search = document.getElementById('timKhoVAT').value.toLowerCase();
@@ -214,9 +205,10 @@
         if (duLieuKho) {
             Object.keys(duLieuKho).forEach(idx => {
                 let don = duLieuKho[idx]; if (!don) return;
-                let ten = taoTenChinhThuc(don);
-                if (ten.toLowerCase().includes(search) || (don.maSerial && don.maSerial.toLowerCase().includes(search))) {
-                    hangChoVAT.push({ don, indexGoc: idx, tenGoc: ten });
+                let tenGoc = don.tenSP || 'Linh kiện'; // Lấy y chang tên gốc
+                
+                if (tenGoc.toLowerCase().includes(search) || (don.maSerial && don.maSerial.toLowerCase().includes(search))) {
+                    hangChoVAT.push({ don, indexGoc: idx, tenSP: tenGoc });
                 }
             });
         }
@@ -225,11 +217,12 @@
         else {
             hangChoVAT.reverse().forEach(item => {
                 let idx = item.indexGoc; let gia = parseInt(item.don.giaBan)||0;
-                // V1.2: Tên giữ nguyên, có thêm ô gõ Mã VAT
+                
+                // V1.3: Tên giữ nguyên 100%, căn chỉnh cột thoáng đãng không bị bí
                 tb.insertAdjacentHTML('beforeend', `
                     <tr>
                         <td style="text-align:center;"><input type="checkbox" class="chk-hang" value="${idx}"></td>
-                        <td style="font-weight:bold; font-size:12px; color:#e2e8f0;">${item.tenGoc}</td>
+                        <td style="font-weight:bold; font-size:13px; color:#e2e8f0;">${item.tenSP}</td>
                         <td><input type="text" id="vatMa_${idx}" placeholder="VD: EN45990" class="vat-edit-input" title="Nhập mã Thuế VAT"></td>
                         <td><input type="number" id="vatGia_${idx}" value="${gia}" class="vat-edit-input" style="text-align:right;" title="Gõ để đổi giá (chưa VAT)"></td>
                     </tr>
@@ -266,16 +259,15 @@
         return "VAT" + String(next).padStart(4, '0');
     }
 
-    // THUẬT TOÁN V1.2: HÚT MÃ VAT TỪ FORM
     function layDuLieuForm(maBill) {
         let mangIn = [];
         document.querySelectorAll('.chk-hang:checked').forEach(chk => { 
             let idx = chk.value;
             if(duLieuKho[idx]) {
                 let maVATInput = document.getElementById('vatMa_' + idx).value.trim();
-                let tenGoc = taoTenChinhThuc(duLieuKho[idx]);
+                let tenGoc = duLieuKho[idx].tenSP || 'Linh kiện'; // Lấy tên gốc
                 
-                // Nếu có nhập mã VAT thì gộp vào tên (Mã_Tên), không thì chỉ lấy Tên
+                // Nếu có nhập mã VAT thì gộp vào tên (Mã_Tên), không thì lấy Tên gốc
                 let tenChinhThucIn = maVATInput !== "" ? (maVATInput + "_" + tenGoc) : tenGoc;
 
                 mangIn.push({
@@ -305,7 +297,6 @@
         let maVAT = taoMaVATMoi(); 
         let record = layDuLieuForm(maVAT);
 
-        // V1.2: KHÔNG LƯU CỜ VÀO KHO GỐC NỮA ĐỂ TRÁNH XUNG ĐỘT KẾ TOÁN NỘI BỘ
         vatRef.child(maVAT).set(record).then(() => {
             showToast("✅ ĐÃ LƯU SỔ VAT (ĐỘC LẬP) THÀNH CÔNG!"); 
             document.getElementById('formVAT').reset(); document.getElementById('checkAll').checked = false;
@@ -364,7 +355,7 @@
         let stt = 1; let tongTienHang = 0;
         let groupedItems = {};
         data.items.forEach(d => {
-            let key = d.tenChinhThuc; // Lúc này Tên = Mã_TênGốc
+            let key = d.tenChinhThuc; 
             if(!groupedItems[key]) groupedItems[key] = { ten: d.tenChinhThuc, sl: 0, gia: parseInt(d.giaBan)||0 };
             groupedItems[key].sl++;
         });
