@@ -212,7 +212,7 @@
             Object.keys(duLieuKho).forEach(idx => {
                 let don = duLieuKho[idx];
                 if (!don) return;
-                if (don.trangThai === 'Đã bán') {
+                if (don.trangThai === 'Đã bán' && !don.maHoaDonVAT) {
                     if (!don.maHoaDon) {
                         hangDaBanAll.push({ don, indexGoc: idx, status: 'ready' });
                     } else if (don.maHoaDon && !lichSuBills[don.maHoaDon]) {
