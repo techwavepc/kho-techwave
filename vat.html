@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Phân Hệ Xuất VAT (V1.3 - Layout Fixed)</title>
+    <title>TechWave PC - Phân Hệ Xuất VAT (V1.4 - Accordion UI)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; padding: 20px; color: #e2e8f0; margin: 0; min-height: 100vh; }
         .container { max-width: 1550px; margin: auto; background: #111827; padding: 30px; border-radius: 12px; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5); border: 1px solid rgba(220, 38, 38, 0.2); border-top: 4px solid #ef4444; }
@@ -34,6 +34,8 @@
         .nav-kho { background: #2563eb; } .nav-ketoan { background: #059669; } .nav-vat { background: #ef4444; border: 2px solid #fff; }
         .vat-edit-input { width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-family: monospace; font-size: 12px; padding: 8px; border-radius: 4px; outline: none; box-sizing: border-box; }
         .vat-edit-input:focus { border-color: #facc15; background: rgba(0,0,0,0.5); }
+        
+        .group-header:hover { filter: brightness(1.2); }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -102,14 +104,32 @@
                         </label>
                     </div>
                 </div>
-                <div style="padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);">
-                    <input type="text" id="timKhoVAT" class="search-bill" placeholder="🔍 Tìm linh kiện để lên Hóa đơn đỏ..." oninput="hienThiHangChoIn()" style="margin:0;">
+                
+                <!-- BỘ LỌC KÉP -->
+                <div style="padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 10px;">
+                    <select id="locPhanLoaiVAT" class="search-bill" style="width: 220px; margin:0;" onchange="hienThiHangChoIn()">
+                        <option value="All">Lọc theo phân loại: Tất cả</option>
+                        <option value="Main">Mainboard</option>
+                        <option value="CPU">CPU</option>
+                        <option value="RAM">RAM</option>
+                        <option value="Ổ cứng">Ổ cứng (SSD/HDD)</option>
+                        <option value="Nguồn">Nguồn (PSU)</option>
+                        <option value="VGA">VGA - Card màn hình</option>
+                        <option value="Vỏ">Vỏ Case</option>
+                        <option value="Tản">Tản nhiệt</option>
+                        <option value="Màn hình">Màn hình</option>
+                        <option value="Phím">Bàn phím</option>
+                        <option value="Chuột">Chuột</option>
+                        <option value="Tai nghe">Tai nghe</option>
+                        <option value="Phụ kiện">Phụ kiện khác</option>
+                    </select>
+                    <input type="text" id="timKhoVAT" class="search-bill" placeholder="🔍 Tìm kiếm linh kiện..." oninput="hienThiHangChoIn()" style="margin:0; flex:1;">
                 </div>
-                <div style="max-height: 350px; overflow-y: auto; padding: 0 15px 15px 15px;">
+
+                <div style="max-height: 400px; overflow-y: auto;">
                     <table id="bangChoIn">
                         <thead><tr>
                             <th style="width: 5%; text-align: center;">Chọn</th>
-                            <!-- Đã nới rộng cột Tên lên 55% để không bị bí tràn -->
                             <th style="width: 55%;">Tên SP (Y chang Kho)</th>
                             <th style="width: 20%;">Mã VAT (Nếu có)</th>
                             <th style="width: 20%; text-align: right;">Đơn Giá VAT</th>
@@ -196,44 +216,85 @@
 
     function checkLoadRender() { if(isKhoLoaded && isVatLoaded) { hienThiHangChoIn(); hienThiLichSu(); } }
 
-    // THUẬT TOÁN V1.3: LẤY TRỰC TIẾP TÊN GỐC TỪ KHO, KHÔNG THÊM BỚT TỪ NGỮ TÀO LAO
+    // HÀM TOGGLE ĐÓNG/MỞ NGĂN KÉO CỦA V1.4
+    function toggleGroup(groupId) {
+        let rows = document.querySelectorAll('.' + groupId);
+        rows.forEach(row => {
+            row.style.display = (row.style.display === 'none') ? 'table-row' : 'none';
+        });
+    }
+
+    // THUẬT TOÁN V1.4: LỌC, TÌM KIẾM VÀ GỘP NHÓM ACCORDION
     function hienThiHangChoIn() {
         const tb = document.querySelector('#bangChoIn tbody');
         const search = document.getElementById('timKhoVAT').value.toLowerCase();
-        tb.innerHTML = ''; let hangChoVAT = [];
+        const locLoai = document.getElementById('locPhanLoaiVAT').value;
+        tb.innerHTML = ''; 
+        
+        let groupedData = {};
         
         if (duLieuKho) {
             Object.keys(duLieuKho).forEach(idx => {
                 let don = duLieuKho[idx]; if (!don) return;
-                let tenGoc = don.tenSP || 'Linh kiện'; // Lấy y chang tên gốc
+                let tenGoc = don.tenSP || 'Linh kiện';
+                let loai = don.loaiLinhKien || 'Khác';
+
+                // Lọc theo ComboBox
+                if(locLoai !== 'All' && loai !== locLoai) return;
                 
+                // Lọc theo thanh Tìm kiếm
                 if (tenGoc.toLowerCase().includes(search) || (don.maSerial && don.maSerial.toLowerCase().includes(search))) {
-                    hangChoVAT.push({ don, indexGoc: idx, tenSP: tenGoc });
+                    if(!groupedData[loai]) groupedData[loai] = [];
+                    groupedData[loai].push({ don, indexGoc: idx, tenSP: tenGoc });
                 }
             });
         }
         
-        if (hangChoVAT.length === 0) { tb.innerHTML = `<tr><td colspan="4" class="empty-state">Kho trống.</td></tr>`; } 
-        else {
-            hangChoVAT.reverse().forEach(item => {
+        if (Object.keys(groupedData).length === 0) { 
+            tb.innerHTML = `<tr><td colspan="4" class="empty-state">Kho trống hoặc không có kết quả phù hợp.</td></tr>`; 
+            return;
+        } 
+        
+        // Sắp xếp thứ tự các danh mục chuẩn
+        const thuTuChuan = { "Main": 1, "CPU": 2, "RAM": 3, "Ổ cứng": 4, "Nguồn": 5, "VGA": 6, "Vỏ": 7, "Tản": 8, "Màn hình": 9, "Phím": 10, "Chuột": 11, "Tai nghe": 12, "Phụ kiện": 13 };
+        let sortedLoai = Object.keys(groupedData).sort((a,b) => (thuTuChuan[a]||99) - (thuTuChuan[b]||99));
+
+        sortedLoai.forEach(loai => {
+            let items = groupedData[loai];
+            let groupId = 'grp_' + loai.replace(/\s/g, ''); // Tạo ID ngăn kéo không dấu cách
+            
+            // Vẽ thẻ Tiêu đề Ngăn Kéo (Header)
+            tb.insertAdjacentHTML('beforeend', `
+                <tr class="group-header" style="background: rgba(56, 189, 248, 0.1); cursor: pointer; border-bottom: 1px solid rgba(56, 189, 248, 0.3);" onclick="toggleGroup('${groupId}')">
+                    <td colspan="4" style="font-weight: bold; color: #38bdf8; padding: 10px;">
+                        ▼ PHÂN LOẠI: ${loai.toUpperCase()} (${items.length} mặt hàng)
+                    </td>
+                </tr>
+            `);
+
+            // Vẽ thẻ Nội dung (Tự động mở sẵn)
+            items.reverse().forEach(item => {
                 let idx = item.indexGoc; let gia = parseInt(item.don.giaBan)||0;
-                
-                // V1.3: Tên giữ nguyên 100%, căn chỉnh cột thoáng đãng không bị bí
                 tb.insertAdjacentHTML('beforeend', `
-                    <tr>
+                    <tr class="${groupId}">
                         <td style="text-align:center;"><input type="checkbox" class="chk-hang" value="${idx}"></td>
-                        <td style="font-weight:bold; font-size:13px; color:#e2e8f0;">${item.tenSP}</td>
+                        <td style="font-weight:bold; font-size:13px; color:#e2e8f0; padding-left: 20px;">${item.tenSP}</td>
                         <td><input type="text" id="vatMa_${idx}" placeholder="VD: EN45990" class="vat-edit-input" title="Nhập mã Thuế VAT"></td>
                         <td><input type="number" id="vatGia_${idx}" value="${gia}" class="vat-edit-input" style="text-align:right;" title="Gõ để đổi giá (chưa VAT)"></td>
                     </tr>
                 `);
             });
-        }
+        });
     }
 
     function chonTatCa() {
         let isChecked = document.getElementById('checkAll').checked;
-        document.querySelectorAll('.chk-hang').forEach(chk => chk.checked = isChecked);
+        // Chỉ check những ô đang được hiển thị (không ẩn)
+        document.querySelectorAll('.chk-hang').forEach(chk => {
+            if(chk.closest('tr').style.display !== 'none') {
+                chk.checked = isChecked;
+            }
+        });
     }
 
     function hienThiLichSu() {
@@ -265,9 +326,7 @@
             let idx = chk.value;
             if(duLieuKho[idx]) {
                 let maVATInput = document.getElementById('vatMa_' + idx).value.trim();
-                let tenGoc = duLieuKho[idx].tenSP || 'Linh kiện'; // Lấy tên gốc
-                
-                // Nếu có nhập mã VAT thì gộp vào tên (Mã_Tên), không thì lấy Tên gốc
+                let tenGoc = duLieuKho[idx].tenSP || 'Linh kiện'; 
                 let tenChinhThucIn = maVATInput !== "" ? (maVATInput + "_" + tenGoc) : tenGoc;
 
                 mangIn.push({
