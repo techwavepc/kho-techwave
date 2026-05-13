@@ -161,11 +161,20 @@
 
     <div class="toolbar" style="margin-top: 25px;">
         <select id="locLoai" onchange="hienThi()" style="flex:0.2">
-            <option value="Tất cả">Tất cả loại</option>
-            <option value="Main">Main</option><option value="CPU">CPU</option>
-            <option value="VGA">VGA</option><option value="RAM">RAM</option>
+            <option value="Tất cả">Phân loại: Tất cả</option>
+            <option value="Main">Mainboard</option>
+            <option value="CPU">CPU</option>
+            <option value="RAM">RAM</option>
+            <option value="VGA">VGA - Card màn hình</option>
+            <option value="Nguồn">Nguồn</option>
+            <option value="Tản">Tản nhiệt</option>
+            <option value="Ổ cứng">Ổ cứng (SSD/HDD)</option>
+            <option value="Vỏ">Vỏ Case</option>
             <option value="Màn hình">Màn hình</option>
-            <option value="Phím">Bàn phím</option><option value="Chuột">Chuột</option>
+            <option value="Phím">Bàn phím</option>
+            <option value="Chuột">Chuột</option>
+            <option value="Tai nghe">Tai nghe</option>
+            <option value="Phụ kiện">Phụ kiện khác</option>
         </select>
         <input type="search" id="oTimKiem" oninput="hienThi()" placeholder="🔍 Tìm kiếm nhanh tên, serial, nhà cung cấp..." style="flex:1">
     </div>
@@ -173,11 +182,11 @@
     <table id="mainTable">
         <thead>
             <tr>
-                <th style="text-align:left; padding-left:25px; width:25%;">Thông tin Sản Phẩm</th>
-                <th style="width:15%;">Phân loại / Hãng</th>
+                <th style="text-align:left; padding-left:25px; width:30%;">Thông tin Sản Phẩm</th>
+                <th style="width:15%;">Hãng Sản Xuất</th>
                 <th style="width:15%;">Tình Trạng</th>
                 <th style="width:15%;">Kho hàng</th>
-                <th style="width:15%;">Giá Bán</th>
+                <th style="width:10%;">Giá Bán</th>
                 <th style="width:15%;">Thao Tác</th>
             </tr>
         </thead>
@@ -297,12 +306,10 @@
         kiemTraHangKhac();
     }
 
-    // THUẬT TOÁN BỌC THÉP ÉP KIỂU MẢNG - CHỐNG CRASH OBJECT
     db.on('value', s => { 
         let rawData = s.val() || [];
-        duLieuKho = []; // Luôn khởi tạo lại mảng sạch
+        duLieuKho = []; 
         
-        // Quét xuyên hố đen bằng Object.keys
         if (Array.isArray(rawData)) {
             duLieuKho = rawData;
         } else {
@@ -313,7 +320,6 @@
         hienThi(); capNhatDashboard();
     });
 
-    // BỌC THÉP HÀM ĐẾM SỐ LƯỢNG
     function capNhatDashboard() {
         let ton = 0; let ban = 0;
         Object.keys(duLieuKho).forEach(k => {
@@ -328,7 +334,6 @@
         document.getElementById('countTong').innerText = ton + ban;
     }
 
-    // BỌC THÉP VÒNG LẶP HIỂN THỊ
     function hienThi() {
         const tb = document.querySelector('#mainTable tbody');
         tb.innerHTML = '';
@@ -338,16 +343,15 @@
         
         Object.keys(duLieuKho).forEach(idx => {
             let d = duLieuKho[idx];
-            if(!d) return; // Bỏ qua hố đen
+            if(!d) return; 
 
-            // Ép chuỗi an toàn chống crash undefined
             const matchSearch = (String(d.tenSP||'') + String(d.maSerial||'') + String(d.hangSanXuat||'') + String(d.nhaCungCap||'')).toLowerCase().includes(tk);
             const matchLoc = (loc === 'Tất cả' || d.loaiLinhKien === loc);
             
             if(matchSearch && matchLoc) {
                 let k = d.tenSP; 
                 if(!groups[k]) groups[k] = { info: d, items: [], ton: 0, daban: 0, setTT: new Set(), setGia: new Set() };
-                groups[k].items.push({ d, i: idx }); // Lấy chuẩn index gốc
+                groups[k].items.push({ d, i: idx });
                 if(d.trangThai === 'Tồn kho') groups[k].ton++; else groups[k].daban++;
                 groups[k].setTT.add(d.tinhTrang);
                 groups[k].setGia.add(d.giaBan);
@@ -371,14 +375,14 @@
                         <span style="color:var(--primary)">▶</span> <b>${inf.tenSP}</b><br>
                         <small style="color:#64748b">SKU: ${inf.maSKU||'-'}</small>
                     </td>
-                    <td>${inf.loaiLinhKien} ${inf.loaiLinhKien==='CPU'?'':'- '+inf.hangSanXuat}</td>
+                    <td style="font-weight:bold; color:#e2e8f0;">${inf.loaiLinhKien === 'CPU' ? (inf.phanLoai || 'Intel/AMD') : (inf.hangSanXuat || '-')}</td>
                     <td style="color:#fbbf24; font-weight:bold">${textTT}</td>
                     <td style="font-weight:bold; color:#e2e8f0;">
                         📦 Tồn: <span style="color:#4ade80; font-size:14px;">${g.ton}</span> <span style="color:#64748b; font-weight:normal;">/</span> <span style="color:var(--primary); font-size:14px;">${g.items.length}</span>
                     </td>
                     <td style="color:var(--primary); font-weight:bold;">${textGia}</td>
                     <td>
-                        <button class="btn-add-more" onclick="event.stopPropagation(); nhapThem(${g.items[0].i})">➕ NHẬP THÊM</button>
+                        <button class="btn-add-more" onclick="event.stopPropagation(); nhapThem(${g.items[0].i})">➕ NHẬP</button>
                         <button class="btn-save" style="padding:6px 10px; font-size:11px" onclick="event.stopPropagation(); suaDong(${g.items[0].i}, true)">SỬA NHÓM</button>
                     </td>
                 </tr>
@@ -545,7 +549,6 @@
         db.set(duLieuKho).then(() => { showToast("Đã lưu dữ liệu!"); resetFormNay(); });
     }
 
-    // BỌC THÉP VÒNG LẶP SỬA
     function suaDong(i, isGroup) {
         let d = duLieuKho[i];
         document.getElementById('tenSP').value = d.tenSP;
@@ -600,7 +603,6 @@
         document.getElementById('nhaCungCap').value = d.nhaCungCap || '';
     }
 
-    // BỌC THÉP VÒNG LẶP CẬP NHẬT TOÀN NHÓM
     function capNhatHangLoat() {
         if(!confirm("Xác nhận thay đổi thông tin cho TOÀN BỘ sản phẩm có chung Tên này?")) return;
         let d = duLieuKho[dangSuaIdx]; let tenGoc = d.tenSP; 
@@ -629,10 +631,9 @@
         db.set(duLieuKho).then(() => { showToast("Đã cập nhật toàn nhóm!"); resetFormNay(); });
     }
 
-    // LỆNH XÓA TÀNG HÌNH (CHỐNG LỆCH HÓA ĐƠN)
     function xoaDon(i){ 
         if(confirm("Xóa vĩnh viễn linh kiện này?")) { 
-            duLieuKho[i] = null; // Tạo hố đen an toàn
+            duLieuKho[i] = null; 
             db.set(duLieuKho); 
         }
     }
