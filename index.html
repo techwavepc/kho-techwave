@@ -78,8 +78,9 @@
 <body>
 
 <div class="nav-menu">
-    <a href="index.html" class="nav-btn" style="background:#2563eb;">📦 KHO LINH KIỆN</a>
+    <a href="index.html" class="nav-btn" style="background:#2563eb; border: 2px solid #fff;">📦 KHO LINH KIỆN</a>
     <a href="hoadon.html" class="nav-btn" style="background:#059669;">🧾 TRANG KẾ TOÁN</a>
+    <a href="vat.html" class="nav-btn" style="background:#ef4444;">🔴 XUẤT HÓA ĐƠN VAT</a>
 </div>
 
 <div id="status-mang">🔄 Đang kết nối...</div>
@@ -194,12 +195,10 @@
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database().ref('KhoLinhKienPC');
+    
     let duLieuKho = []; let dangSuaIdx = -1;
     let cacNhomDangMo = new Set(); 
-    
-    // BIẾN NÀY ĐÃ ĐƯỢC CHUYỂN THÀNH 'Tồn kho' MẶC ĐỊNH
-    let cheDoLocTrangThai = 'Tồn kho'; 
-    
+    let cheDoLocTrangThai = 'Tồn kho';
     let mangQuetTam = [];
 
     function khauTrangTelex(s) {
@@ -208,7 +207,6 @@
     }
     
     document.getElementById('maSerial').addEventListener('input', function(){ this.value = khauTrangTelex(this.value); });
-    
     document.getElementById('maSerial').addEventListener('keypress', e => { 
         if(e.key==='Enter') { 
             e.preventDefault(); 
@@ -259,9 +257,11 @@
         const h = document.getElementById('hangSanXuat').value;
         const inputKhac = document.getElementById('hangKhacText');
         if (h === 'Khác') {
-            inputKhac.style.display = 'inline-block'; inputKhac.focus();
+            inputKhac.style.display = 'inline-block';
+            inputKhac.focus();
         } else {
-            inputKhac.style.display = 'none'; inputKhac.value = '';
+            inputKhac.style.display = 'none';
+            inputKhac.value = '';
         }
     }
 
@@ -271,17 +271,18 @@
         const h = document.getElementById('hangSanXuat');
         
         p.innerHTML = '<option value="-">-</option>'; p.disabled = true;
-
         if(l==='CPU') {
             p.innerHTML = '<option value="Intel">Intel</option><option value="AMD">AMD</option>';
             p.disabled = false; h.style.display = 'none';
         } else {
             h.style.display = 'inline-block';
             if(l==='Main') {
-                p.innerHTML = '<option value="Intel">Intel</option><option value="AMD">AMD</option>'; p.disabled = false;
+                p.innerHTML = '<option value="Intel">Intel</option><option value="AMD">AMD</option>';
+                p.disabled = false;
                 h.innerHTML = '<option value="ASUS">ASUS</option><option value="GIGABYTE">GIGABYTE</option><option value="MSI">MSI</option><option value="ASRock">ASRock</option><option value="Khác">Khác</option>';
             } else if(l==='VGA') {
-                p.innerHTML = '<option value="Nvidia">Nvidia</option><option value="AMD">AMD</option>'; p.disabled = false;
+                p.innerHTML = '<option value="Nvidia">Nvidia</option><option value="AMD">AMD</option>';
+                p.disabled = false;
                 h.innerHTML = '<option value="ASUS">ASUS</option><option value="MSI">MSI</option><option value="Gigabyte">Gigabyte</option><option value="Zotac">Zotac</option><option value="Colorful">Colorful</option><option value="Khác">Khác</option>';
             } else if(l==='Màn hình') {
                 h.innerHTML = '<option value="Dell">Dell</option><option value="ASUS">ASUS</option><option value="LG">LG</option><option value="Samsung">Samsung</option><option value="HKC">HKC</option><option value="AOC">AOC</option><option value="Gigabyte">Gigabyte</option><option value="MSI">MSI</option><option value="Khác">Khác</option>';
@@ -296,33 +297,57 @@
         kiemTraHangKhac();
     }
 
+    // THUẬT TOÁN BỌC THÉP ÉP KIỂU MẢNG - CHỐNG CRASH OBJECT
     db.on('value', s => { 
-        duLieuKho = s.val() || []; 
+        let rawData = s.val() || [];
+        duLieuKho = []; // Luôn khởi tạo lại mảng sạch
+        
+        // Quét xuyên hố đen bằng Object.keys
+        if (Array.isArray(rawData)) {
+            duLieuKho = rawData;
+        } else {
+            Object.keys(rawData).forEach(k => {
+                if(rawData[k]) duLieuKho[k] = rawData[k];
+            });
+        }
         hienThi(); capNhatDashboard();
     });
 
+    // BỌC THÉP HÀM ĐẾM SỐ LƯỢNG
     function capNhatDashboard() {
-        let t = duLieuKho.length;
-        let ton = duLieuKho.filter(x => x.trangThai === 'Tồn kho').length;
-        let ban = t - ton;
+        let ton = 0; let ban = 0;
+        Object.keys(duLieuKho).forEach(k => {
+            let d = duLieuKho[k];
+            if(d) {
+                if (d.trangThai === 'Tồn kho') ton++;
+                else ban++;
+            }
+        });
         document.getElementById('countTon').innerText = ton;
         document.getElementById('countBan').innerText = ban;
-        document.getElementById('countTong').innerText = t;
+        document.getElementById('countTong').innerText = ton + ban;
     }
 
+    // BỌC THÉP VÒNG LẶP HIỂN THỊ
     function hienThi() {
-        const tb = document.querySelector('#mainTable tbody'); tb.innerHTML = '';
+        const tb = document.querySelector('#mainTable tbody');
+        tb.innerHTML = '';
         const tk = document.getElementById('oTimKiem').value.toLowerCase();
         const loc = document.getElementById('locLoai').value;
         let groups = {};
+        
+        Object.keys(duLieuKho).forEach(idx => {
+            let d = duLieuKho[idx];
+            if(!d) return; // Bỏ qua hố đen
 
-        duLieuKho.forEach((d, i) => {
-            const matchSearch = (d.tenSP + d.maSerial + d.hangSanXuat + (d.nhaCungCap||'')).toLowerCase().includes(tk);
+            // Ép chuỗi an toàn chống crash undefined
+            const matchSearch = (String(d.tenSP||'') + String(d.maSerial||'') + String(d.hangSanXuat||'') + String(d.nhaCungCap||'')).toLowerCase().includes(tk);
             const matchLoc = (loc === 'Tất cả' || d.loaiLinhKien === loc);
+            
             if(matchSearch && matchLoc) {
                 let k = d.tenSP; 
                 if(!groups[k]) groups[k] = { info: d, items: [], ton: 0, daban: 0, setTT: new Set(), setGia: new Set() };
-                groups[k].items.push({ d, i });
+                groups[k].items.push({ d, i: idx }); // Lấy chuẩn index gốc
                 if(d.trangThai === 'Tồn kho') groups[k].ton++; else groups[k].daban++;
                 groups[k].setTT.add(d.tinhTrang);
                 groups[k].setGia.add(d.giaBan);
@@ -361,7 +386,6 @@
             
             g.items.forEach(item => {
                 let isDaban = item.d.trangThai === 'Đã bán';
-                
                 if (cheDoLocTrangThai === 'Tồn kho' && isDaban) return; 
                 if (cheDoLocTrangThai === 'Đã bán' && !isDaban) return; 
 
@@ -400,13 +424,14 @@
     }
 
     function doiTrangThaiNhanh(idx, el) {
-        let v = el.value; duLieuKho[idx].trangThai = v;
+        let v = el.value;
+        duLieuKho[idx].trangThai = v;
         if(v === 'Đã bán') { 
-            let n = new Date(); 
+            let n = new Date();
             duLieuKho[idx].ngayBan = `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')} - ${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`;
         } else {
             duLieuKho[idx].ngayBan = '';
-            delete duLieuKho[idx].maHoaDon; delete duLieuKho[idx].ngayXuatBill;
+            delete duLieuKho[idx].maHoaDon; delete duLieuKho[idx].ngayXuatBill; delete duLieuKho[idx].maHoaDonVAT;
             delete duLieuKho[idx].tenKH; delete duLieuKho[idx].sdtKH; delete duLieuKho[idx].dcKH;
             delete duLieuKho[idx].saleKH; delete duLieuKho[idx].noteKH;
         }
@@ -424,12 +449,13 @@
 
     function resetFormNay() {
         document.getElementById('formKho').reset(); 
-        dangSuaIdx = -1; mangQuetTam = [];
+        dangSuaIdx = -1;
+        mangQuetTam = [];
         document.getElementById('btnHuy').style.display = 'none';
         document.getElementById('btnUpdateAll').style.display = 'none';
         document.getElementById('selectSerialSua').style.display = 'none';
         document.getElementById('hangKhacText').style.display = 'none'; 
-        document.getElementById('soLuongNhap').disabled = false; 
+        document.getElementById('soLuongNhap').disabled = false;
         document.getElementById('khuVucQuet').style.display = 'none';
         document.getElementById('danhSachMaDaQuet').innerHTML = '';
         document.getElementById('tienDoText').innerText = '0/1';
@@ -445,7 +471,6 @@
         document.getElementById('nhaCungCap').value = d.nhaCungCap || ''; 
         document.getElementById('loaiLinhKien').value = d.loaiLinhKien; logicPhanLoai(); 
         document.getElementById('phanLoai').value = d.phanLoai;
-        
         if(d.loaiLinhKien !== 'CPU') {
             let hSelect = document.getElementById('hangSanXuat');
             let optExists = Array.from(hSelect.options).some(o => o.value === d.hangSanXuat);
@@ -463,7 +488,7 @@
         document.getElementById('soLuongNhap').disabled = false;
         document.getElementById('ngayNhap').value = new Date().toISOString().split('T')[0];
         
-        dangSuaIdx = -1; 
+        dangSuaIdx = -1;
         document.getElementById('btnHuy').style.display = 'inline-block';
         document.getElementById('btnUpdateAll').style.display = 'none';
         document.getElementById('selectSerialSua').style.display = 'none';
@@ -509,7 +534,6 @@
                 giaBan: document.getElementById('giaBan').value.replace(/\D/g,''),
                 trangThai: 'Tồn kho'
             };
-
             if(sl === 1) {
                 if(!sn) return alert("Vui lòng quét Serial!");
                 duLieuKho.push({...baseData, maSerial: sn});
@@ -521,6 +545,7 @@
         db.set(duLieuKho).then(() => { showToast("Đã lưu dữ liệu!"); resetFormNay(); });
     }
 
+    // BỌC THÉP VÒNG LẶP SỬA
     function suaDong(i, isGroup) {
         let d = duLieuKho[i];
         document.getElementById('tenSP').value = d.tenSP;
@@ -528,7 +553,6 @@
         document.getElementById('nhaCungCap').value = d.nhaCungCap || '';
         document.getElementById('loaiLinhKien').value = d.loaiLinhKien; logicPhanLoai();
         document.getElementById('phanLoai').value = d.phanLoai;
-        
         if(d.loaiLinhKien !== 'CPU') {
             let hSelect = document.getElementById('hangSanXuat');
             let optExists = Array.from(hSelect.options).some(o => o.value === d.hangSanXuat);
@@ -549,16 +573,17 @@
 
         if(isGroup) {
             let opts = '';
-            duLieuKho.forEach((item, idx) => {
-                if(item.tenSP === d.tenSP) {
-                    opts += `<option value="${idx}" ${idx === i ? 'selected' : ''}>${item.maSerial} (${item.tinhTrang})</option>`;
+            Object.keys(duLieuKho).forEach(idx => {
+                let item = duLieuKho[idx];
+                if(item && item.tenSP === d.tenSP) {
+                    opts += `<option value="${idx}" ${idx == i ? 'selected' : ''}>${item.maSerial} (${item.tinhTrang})</option>`;
                 }
             });
             selObj.innerHTML = opts; selObj.style.display = 'block'; 
             document.getElementById('btnUpdateAll').style.display = 'inline-block';
             document.getElementById('btnLuu').innerText = "CẬP NHẬT 1 MÃ";
         } else {
-            selObj.style.display = 'none'; document.getElementById('btnUpdateAll').style.display = 'none'; 
+            selObj.style.display = 'none'; document.getElementById('btnUpdateAll').style.display = 'none';
             document.getElementById('btnLuu').innerText = "CẬP NHẬT MÃ NÀY";
         }
         window.scrollTo(0,0);
@@ -575,6 +600,7 @@
         document.getElementById('nhaCungCap').value = d.nhaCungCap || '';
     }
 
+    // BỌC THÉP VÒNG LẶP CẬP NHẬT TOÀN NHÓM
     function capNhatHangLoat() {
         if(!confirm("Xác nhận thay đổi thông tin cho TOÀN BỘ sản phẩm có chung Tên này?")) return;
         let d = duLieuKho[dangSuaIdx]; let tenGoc = d.tenSP; 
@@ -592,8 +618,9 @@
         let mHang = document.getElementById('hangSanXuat').value;
         if(mHang === 'Khác') mHang = document.getElementById('hangKhacText').value.trim() || 'Hãng lạ';
 
-        duLieuKho.forEach(item => {
-            if(item.tenSP === tenGoc) {
+        Object.keys(duLieuKho).forEach(idx => {
+            let item = duLieuKho[idx];
+            if(item && item.tenSP === tenGoc) {
                 item.tenSP = mTen; item.maSKU = mSKU; item.nhaCungCap = mNcc; item.giaNhap = mGiaN; item.giaBan = mGiaB;
                 item.loaiLinhKien = mLoai; item.phanLoai = mPhan; item.hangSanXuat = mHang; 
                 item.ngayNhap = mNgay; item.tinhTrang = mTinhTrang;
@@ -602,13 +629,18 @@
         db.set(duLieuKho).then(() => { showToast("Đã cập nhật toàn nhóm!"); resetFormNay(); });
     }
 
-    function xoaDon(i){ if(confirm("Xóa vĩnh viễn linh kiện này?")) { duLieuKho.splice(i,1); db.set(duLieuKho); }}
+    // LỆNH XÓA TÀNG HÌNH (CHỐNG LỆCH HÓA ĐƠN)
+    function xoaDon(i){ 
+        if(confirm("Xóa vĩnh viễn linh kiện này?")) { 
+            duLieuKho[i] = null; // Tạo hố đen an toàn
+            db.set(duLieuKho); 
+        }
+    }
     
     firebase.database().ref(".info/connected").on("value", s => {
         const t = document.getElementById('status-mang');
         if (s.val()) { t.innerHTML = "✅ ONLINE"; t.className = "online"; } else { t.innerHTML = "❌ OFFLINE"; t.className = "offline"; }
     });
-
     window.onload = () => { logicPhanLoai(); document.getElementById('ngayNhap').value = new Date().toISOString().split('T')[0]; };
 </script>
 </body>
