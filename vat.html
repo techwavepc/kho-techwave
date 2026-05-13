@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Phân Hệ Xuất VAT (V3.1 - Smart Importer)</title>
+    <title>TechWave PC - Phân Hệ Xuất VAT (V3.2 - Auto Spawn)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; padding: 20px; color: #e2e8f0; margin: 0; min-height: 100vh; }
         .container { max-width: 1550px; margin: auto; background: #111827; padding: 30px; border-radius: 12px; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5); border: 1px solid rgba(220, 38, 38, 0.2); border-top: 4px solid #ef4444; }
@@ -54,12 +54,16 @@
         .inp-tbl { width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 8px; border-radius: 4px; outline: none; box-sizing: border-box; font-size: 12px; }
         .inp-tbl:focus { border-color: #10b981; background: rgba(0,0,0,0.5); }
         .inp-tbl option { background: #0f172a; }
+        
         .btn-icon { background: none; border: none; font-size: 15px; cursor: pointer; padding: 4px; transition: 0.2s; }
-        .btn-icon.add { color: #10b981; }
         .btn-icon.del { color: #ef4444; }
         .btn-icon:hover { transform: scale(1.3); }
         .input-locked { background: rgba(0,0,0,0.5) !important; border-color: rgba(74, 222, 128, 0.5) !important; color: #4ade80 !important; cursor: not-allowed; pointer-events: none; }
         
+        /* Nút thêm dòng trống thủ công dưới bảng */
+        .btn-add-row { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px dashed #10b981; padding: 10px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;}
+        .btn-add-row:hover { background: rgba(16, 185, 129, 0.3); color: #fff; border-style: solid; }
+
         .flex-row { display: flex; gap: 12px; align-items: center; }
         .flex-row > div { flex: 1; }
         .btn-add-item { background: #10b981; color: white; border: none; padding: 15px; font-size: 13px; font-weight: bold; cursor: pointer; border-radius: 6px; transition: 0.2s; width: 100%; letter-spacing: 1px; margin-top: 10px;}
@@ -160,12 +164,14 @@
                             <th style="width: 8%;">Thuế</th>
                             <th style="width: 13%;">Đơn Giá S.Thuế</th>
                             <th style="width: 13%;">Thành Tiền</th>
-                            <th style="width: 8%;">Thao Tác</th>
+                            <th style="width: 5%;">Xóa</th>
                         </tr></thead>
                         <tbody id="tbodyNhapVat">
                             </tbody>
                     </table>
                 </div>
+
+                <button type="button" class="btn-add-row" onclick="themDongNhapVAT()">➕ THÊM DÒNG TRỐNG</button>
 
                 <button type="submit" class="btn-add-item">⬇️ LƯU LÔ HÀNG NÀY VÀO KHO VAT</button>
             </form>
@@ -244,7 +250,6 @@
     let lichSuVAT = {};
     let isAllExpanded = false;
 
-    // --- CÁC HÀM TIỆN ÍCH ---
     const mangSo = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
     function docBlock(so, dayDu) {
         let chuoi = ""; let tram = Math.floor(so / 100); so = so % 100; let chuc = Math.floor(so / 10); let donvi = so % 10;
@@ -294,13 +299,16 @@
     }
 
     // ==========================================
-    // THUẬT TOÁN BẢNG NHẬP LIỆU MISA (V3.1)
+    // THUẬT TOÁN BẢNG NHẬP LIỆU MISA V3.2 (AUTO-SPAWN)
     // ==========================================
-    window.onload = () => { for(let i=0; i<3; i++) themDongNhapVAT(); }; // Khởi tạo 3 dòng trống
+    window.onload = () => { 
+        for(let i=0; i<3; i++) themDongNhapVAT(); 
+    };
 
-    function themDongNhapVAT(btn) {
+    function themDongNhapVAT() {
         let tr = document.createElement('tr');
         tr.className = 'row-nhap-vat';
+        // Đã xóa sạch nút ➕ ở cuối dòng, chỉ để lại thùng rác
         tr.innerHTML = `
             <td class="stt-nhap" style="color:#94a3b8; font-weight:bold; text-align:center;"></td>
             <td>
@@ -312,10 +320,10 @@
                     <option value="Màn hình">Màn hình</option><option value="Phụ kiện">Khác</option>
                 </select>
             </td>
-            <td><input type="text" class="inp-tbl inp-ten" placeholder="Tên hàng hóa..."></td>
+            <td><input type="text" class="inp-tbl inp-ten" placeholder="Tên hàng hóa..." oninput="kiemTraTuDongThemDong(this)"></td>
             <td><input type="text" class="inp-tbl inp-dvt" value="Chiếc" style="text-align:center;"></td>
             <td><input type="number" class="inp-tbl inp-sl" value="1" min="1" style="text-align:center; color:#38bdf8; font-weight:bold;" oninput="tinhGiaNhapDong(this)"></td>
-            <td><input type="text" class="inp-tbl inp-gia-truoc" placeholder="Giá..." style="text-align:right; font-weight:bold; color:#fbbf24;" oninput="tinhGiaNhapDong(this, 'truoc')"></td>
+            <td><input type="text" class="inp-tbl inp-gia-truoc" placeholder="Giá..." style="text-align:right; font-weight:bold; color:#fbbf24;" oninput="tinhGiaNhapDong(this, 'truoc'); kiemTraTuDongThemDong(this)"></td>
             <td>
                 <select class="inp-tbl inp-thue" onchange="tinhGiaNhapDong(this, 'thue')">
                     <option value="5">5%</option><option value="8" selected>8%</option><option value="10">10%</option>
@@ -324,13 +332,27 @@
             <td><input type="text" class="inp-tbl inp-gia-sau input-locked" value="0" readonly tabindex="-1" style="text-align:right;"></td>
             <td class="inp-thanh-tien" style="text-align:right; font-weight:bold; color:#ef4444; font-family:monospace; padding-right:10px;">0</td>
             <td style="text-align:center;">
-                <button type="button" class="btn-icon add" onclick="themDongNhapVAT(this)" title="Thêm dòng bên dưới">➕</button>
                 <button type="button" class="btn-icon del" onclick="xoaDongNhapVAT(this)" title="Xóa dòng này">🗑️</button>
             </td>
         `;
-        if (btn) { btn.closest('tr').after(tr); } 
-        else { document.getElementById('tbodyNhapVat').appendChild(tr); }
+        document.getElementById('tbodyNhapVat').appendChild(tr);
         danhSoThuTuNhap();
+    }
+
+    // Cơ chế thông minh: Kiểm tra xem user có đang gõ ở dòng cuối cùng không, nếu có thì đẻ thêm 1 dòng trống
+    function kiemTraTuDongThemDong(el) {
+        let row = el.closest('tr');
+        let tbody = document.getElementById('tbodyNhapVat');
+        let lastRow = tbody.lastElementChild;
+        
+        if (row === lastRow) {
+            let ten = row.querySelector('.inp-ten').value.trim();
+            let gia = row.querySelector('.inp-gia-truoc').value.trim();
+            // Nếu có gõ bất kỳ ký tự nào vào tên hoặc giá -> Lập tức đẻ dòng mới
+            if (ten !== "" || gia !== "") {
+                themDongNhapVAT();
+            }
+        }
     }
 
     function xoaDongNhapVAT(btn) {
@@ -339,7 +361,7 @@
             btn.closest('tr').remove();
             danhSoThuTuNhap();
         } else {
-            showToast("Phải giữ lại ít nhất 1 dòng!");
+            showToast("Bảng phải có ít nhất 1 dòng!");
         }
     }
 
@@ -388,7 +410,7 @@
                     duLieuKhoVAT.push({
                         tenSP: ten, phanLoai: phanLoai,
                         nccTen: nccTen, nccMST: nccMST, nccDiaChi: nccDiaChi,
-                        ngayThem: ngayThem, sl: 1, // Tách ra từng kiện 1 chiếc để dễ check xuất HĐ
+                        ngayThem: ngayThem, sl: 1,
                         giaTruoc: giaTruoc, thueRate: thueRate, giaSau: giaSau,
                         trangThai: 'Tồn'
                     });
@@ -397,12 +419,12 @@
             }
         });
 
-        if (count === 0) { alert("Vui lòng nhập Tên Sản Phẩm cho ít nhất 1 dòng!"); return; }
+        if (count === 0) { alert("Vui lòng gõ Tên Sản Phẩm vào bảng để nhập kho!"); return; }
 
         khoVatRef.set(duLieuKhoVAT).then(() => {
             showToast(`✅ Đã nhập ${count} kiện hàng vào Kho VAT!`);
             document.getElementById('tbodyNhapVat').innerHTML = '';
-            for(let i=0; i<3; i++) themDongNhapVAT(); // Tái tạo 3 dòng trống
+            for(let i=0; i<3; i++) themDongNhapVAT(); // Tái tạo lại 3 dòng trống sạch sẽ
         });
     }
 
@@ -411,18 +433,16 @@
     // ==========================================
 
     function capNhatGiaSauThueToanKho() {
-        // Cập nhật lại giá hiển thị trong Kho nếu đổi mức thuế xuất
         hienThiKhoVAT();
     }
 
     function xoaKhoiKhoVAT(idx) {
         if(confirm("Xóa vĩnh viễn kiện hàng này khỏi kho VAT?")) {
-            duLieuKhoVAT[idx] = null; // Xóa tàng hình
+            duLieuKhoVAT[idx] = null; 
             khoVatRef.set(duLieuKhoVAT);
         }
     }
 
-    // HIỂN THỊ KHO VAT (ACCORDION)
     function hienThiKhoVAT() {
         const tb = document.querySelector('#bangChoIn tbody');
         const search = document.getElementById('timKhoVAT').value.toLowerCase();
@@ -476,7 +496,7 @@
             group.items.forEach(item => {
                 let idx = item.indexGoc; 
                 let giaTruoc = item.don.giaTruoc || 0;
-                let giaSauXuat = Math.round(giaTruoc * (1 + vatRateXuat/100)); // Tính lại giá sau thuế theo mức thuế đang chọn ở cột trái
+                let giaSauXuat = Math.round(giaTruoc * (1 + vatRateXuat/100));
 
                 tb.insertAdjacentHTML('beforeend', `
                     <tr class="child-row child_${groupId}" style="display: ${displayStyle};" data-tengoc="${group.tenSP}">
@@ -636,11 +656,12 @@
         ]).then(() => {
             showToast("✅ ĐÃ LƯU HÓA ĐƠN ĐỎ THÀNH CÔNG!"); 
             document.getElementById('khTen').value = ''; document.getElementById('khMST').value = ''; document.getElementById('khDiaChi').value = '';
+            document.querySelectorAll('.chk-hang').forEach(c => c.checked = false);
             veTrangInVAT(r, 'chot');
         });
     }
 
-    // TEMPLATE IN HÓA ĐƠN VAT CHUẨN (CHỈ IN TÊN, ẨN NPP ĐẦU VÀO)
+    // TEMPLATE IN HÓA ĐƠN VAT CHUẨN
     function veTrangInVAT(data, mode) {
         if(!data || !data.items) return;
         let pNgay = data.ngayVAT.split('/'); 
