@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Kế Toán & Lưu Trữ (Bản Nội Bộ Khôi Phục)</title>
+    <title>TechWave PC - Kế Toán & Lưu Trữ (V10.23 - Admin Sweeper)</title>
     <style>
         body { 
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
@@ -59,7 +59,6 @@
         .right-col { display: flex; flex-direction: column; gap: 20px; }
         .search-bill { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #fff; margin-bottom: 10px; font-size: 12px; box-sizing: border-box;}
 
-        /* Menu Điều Hướng Mới */
         .nav-bar { position: fixed; top: 20px; left: 20px; z-index: 9999; display: flex; gap: 10px; }
         .nav-btn { text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.5); color: #fff; }
         .nav-kho { background: #2563eb; } 
@@ -70,6 +69,19 @@
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
+
+<div id="adminModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:#1e293b; padding:25px; border-radius:8px; border:2px solid #ef4444; width:320px; display:flex; flex-direction:column; gap:15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
+        <h3 style="color:#ef4444; margin:0; text-align:center; text-transform:uppercase;">🔐 Xác Thực Quản Trị</h3>
+        <p style="color:#94a3b8; font-size:12px; text-align:center; margin:0;">Hệ thống sẽ quét và ẩn toàn bộ linh kiện đã bán nhưng kẹt quá 24h chưa lên Bill.</p>
+        <input type="text" id="admUser" placeholder="Tên đăng nhập" style="padding:12px; background:#0f172a; color:#fff; border:1px solid #334155; border-radius:4px; outline:none;">
+        <input type="password" id="admPass" placeholder="Mật khẩu" style="padding:12px; background:#0f172a; color:#fff; border:1px solid #334155; border-radius:4px; outline:none;">
+        <div style="display:flex; gap:10px; margin-top:10px;">
+            <button onclick="xacNhanDonRac()" style="flex:1; background:#ef4444; color:#fff; border:none; padding:12px; border-radius:4px; cursor:pointer; font-weight:bold; transition:0.2s;">DỌN DẸP</button>
+            <button onclick="dongModalAdmin()" style="flex:1; background:#64748b; color:#fff; border:none; padding:12px; border-radius:4px; cursor:pointer; font-weight:bold; transition:0.2s;">HỦY BỎ</button>
+        </div>
+    </div>
+</div>
 
 <div class="nav-bar">
     <a href="index.html" class="nav-btn nav-kho">📦 VỀ KHO LINH KIỆN</a>
@@ -106,9 +118,14 @@
                 <div class="card-title" style="padding: 15px 20px 10px 20px; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.05); background: rgba(0,0,0,0.2);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="color: #facc15;">🛒 DANH SÁCH LINH KIỆN "ĐÃ XUẤT KHO" CHỜ LÊN BILL</span>
-                        <label style="cursor: pointer; color: #e2e8f0; font-size: 12px; display: flex; align-items: center; gap: 5px;">
-                            <input type="checkbox" id="checkAll" class="checkbox-item" onchange="chonTatCa()"> Chọn tất cả
-                        </label>
+                        
+                        <div style="display: flex; gap: 15px; align-items: center;">
+                            <button onclick="moModalAdmin()" style="background:#ef4444; color:#fff; border:none; padding:4px 10px; border-radius:4px; font-size:11px; cursor:pointer; font-weight:bold; transition: 0.2s;" onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">🧹 DỌN RÁC (>24H)</button>
+                            
+                            <label style="cursor: pointer; color: #e2e8f0; font-size: 12px; display: flex; align-items: center; gap: 5px;">
+                                <input type="checkbox" id="checkAll" class="checkbox-item" onchange="chonTatCa()"> Chọn tất cả
+                            </label>
+                        </div>
                     </div>
                 </div>
                 <div style="max-height: 350px; overflow-y: auto;">
@@ -166,6 +183,79 @@
     let isKhoLoaded = false;
     let isBillLoaded = false;
 
+    // ----- THUẬT TOÁN ADMIN SWEEPER (DỌN RÁC V10.23) -----
+    function moModalAdmin() {
+        document.getElementById('adminModal').style.display = 'flex';
+        document.getElementById('admUser').focus();
+    }
+    
+    function dongModalAdmin() {
+        document.getElementById('adminModal').style.display = 'none';
+        document.getElementById('admUser').value = '';
+        document.getElementById('admPass').value = '';
+    }
+
+    function parseNgayBanToTime(strDate) {
+        // Hệ thống lưu ngày bán dạng: "HH:mm - DD/MM/YYYY"
+        if(!strDate) return 0;
+        try {
+            let parts = strDate.split(' - ');
+            if(parts.length !== 2) return 0;
+            let timeParts = parts[0].split(':');
+            let dateParts = parts[1].split('/');
+            // new Date(year, monthIndex, day, hours, minutes)
+            let parsedDate = new Date(dateParts[2], parseInt(dateParts[1])-1, dateParts[0], timeParts[0], timeParts[1]);
+            return parsedDate.getTime();
+        } catch(e) {
+            return 0;
+        }
+    }
+
+    function xacNhanDonRac() {
+        let u = document.getElementById('admUser').value;
+        let p = document.getElementById('admPass').value;
+        
+        // Em có thể đổi mật khẩu ở đoạn IF này:
+        if(u !== 'admin' || p !== 'techwave@123') {
+            alert('❌ Sai tài khoản hoặc mật khẩu Quản trị!');
+            return;
+        }
+        
+        let now = Date.now();
+        let count = 0;
+        
+        let xacNhan = confirm("⚠️ HỆ THỐNG SẼ QUÉT VÀ DỌN DẸP:\nCác linh kiện đã bán nhưng quá 24 giờ không ai lập Bill.\n\nHàng sẽ biến mất khỏi danh sách này nhưng vẫn lưu ẩn trong hệ thống.\nTiếp tục?");
+        if(!xacNhan) return;
+
+        if (duLieuKho) {
+            Object.keys(duLieuKho).forEach(idx => {
+                let don = duLieuKho[idx];
+                if (don && don.trangThai === 'Đã bán' && !don.maHoaDon) {
+                    let timeBan = parseNgayBanToTime(don.ngayBan);
+                    
+                    // Nếu thời gian bán = 0 (bị lỗi dữ liệu cũ) HOẶC chênh lệch > 86400000 ms (24 tiếng)
+                    if(timeBan === 0 || (now - timeBan > 86400000)) {
+                        duLieuKho[idx].maHoaDon = "HUY-TREO"; // Gắn cờ ma để nó tàng hình khỏi bảng chờ
+                        duLieuKho[idx].ngayXuatBill = "Hệ thống tự dọn rác do kẹt quá 24h";
+                        count++;
+                    }
+                }
+            });
+        }
+
+        if(count > 0) {
+            khoRef.set(duLieuKho).then(() => {
+                showToast(`✅ Đã dọn dẹp thành công ${count} đơn hàng bị treo!`);
+                dongModalAdmin();
+                hienThiHangChoIn(); // Cập nhật lại giao diện ngay
+            });
+        } else {
+            alert("✅ Kho sạch sẽ! Không có đơn hàng nào kẹt quá 24h.");
+            dongModalAdmin();
+        }
+    }
+    // -----------------------------------------------------
+
     function showToast(msg, isError = false) {
         const t = document.getElementById('thongBaoToast');
         t.innerText = msg; t.style.background = isError ? '#ef4444' : '#10b981';
@@ -212,10 +302,11 @@
             Object.keys(duLieuKho).forEach(idx => {
                 let don = duLieuKho[idx];
                 if (!don) return;
-                if (don.trangThai === 'Đã bán' && !don.maHoaDonVAT) {
+                if (don.trangThai === 'Đã bán') {
                     if (!don.maHoaDon) {
                         hangDaBanAll.push({ don, indexGoc: idx, status: 'ready' });
-                    } else if (don.maHoaDon && !lichSuBills[don.maHoaDon]) {
+                    } else if (don.maHoaDon && don.maHoaDon !== "HUY-TREO" && !lichSuBills[don.maHoaDon]) {
+                        // Nếu là cờ HUY-TREO thì bỏ qua (nó đã tàng hình)
                         hangDaBanAll.push({ don, indexGoc: idx, status: 'error' });
                     }
                 }
@@ -241,7 +332,18 @@
                         </tr>
                     `);
                 } else {
-                    tb.insertAdjacentHTML('beforeend', `<tr><td style="text-align:center;"><input type="checkbox" class="chk-hang" value="${indexGoc}"></td><td><strong>${ten}</strong><span class="sn-text">SN: ${don.maSerial || ''}</span></td><td>${don.loaiLinhKien || ''}</td><td style="text-align:right;">${(parseInt(don.giaBan)||0).toLocaleString('vi-VN')}</td></tr>`);
+                    let colorDate = '#94a3b8';
+                    let tgBanStr = don.ngayBan ? `Bán lúc: ${don.ngayBan}` : 'Chưa có giờ bán';
+                    
+                    tb.insertAdjacentHTML('beforeend', `<tr>
+                        <td style="text-align:center;"><input type="checkbox" class="chk-hang" value="${indexGoc}"></td>
+                        <td>
+                            <strong>${ten}</strong>
+                            <span class="sn-text">SN: ${don.maSerial || ''} <i style="color:${colorDate}; font-size:10px; font-weight:normal; margin-left:10px;">(${tgBanStr})</i></span>
+                        </td>
+                        <td>${don.loaiLinhKien || ''}</td>
+                        <td style="text-align:right;">${(parseInt(don.giaBan)||0).toLocaleString('vi-VN')}</td>
+                    </tr>`);
                 }
             });
         }
