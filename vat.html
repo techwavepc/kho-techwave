@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Phân Hệ Xuất VAT (V3.2 - Auto Spawn)</title>
+    <title>TechWave PC - Phân Hệ Xuất VAT (V3.3 - Precision Currency)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; padding: 20px; color: #e2e8f0; margin: 0; min-height: 100vh; }
         .container { max-width: 1550px; margin: auto; background: #111827; padding: 30px; border-radius: 12px; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5); border: 1px solid rgba(220, 38, 38, 0.2); border-top: 4px solid #ef4444; }
@@ -38,7 +38,6 @@
         .nav-btn { text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; font-size: 13px; border: 1px solid rgba(255,255,255,0.2); box-shadow: 0 4px 15px rgba(0,0,0,0.5); color: #fff; }
         .nav-kho { background: #2563eb; } .nav-ketoan { background: #059669; } .nav-vat { background: #ef4444; border: 2px solid #fff; }
         
-        /* Giao diện Accordion Kho */
         .group-header { background: #0f172a; cursor: pointer; transition: 0.2s; }
         .group-header:hover { background: #1e293b; }
         .child-row { background: rgba(0,0,0,0.2); }
@@ -47,7 +46,6 @@
         .vat-edit-input { width: 100%; background: transparent; border: 1px solid rgba(255,255,255,0.1); color: #fff; font-family: monospace; font-size: 12px; padding: 6px; border-radius: 4px; outline: none; box-sizing: border-box; }
         .vat-edit-input:focus { border-color: #facc15; background: rgba(0,0,0,0.5); }
         
-        /* BẢNG NHẬP LIỆU MISA STYLE */
         .table-nhap { width: 100%; border-collapse: collapse; background: #0f172a; border-radius: 8px; overflow: hidden; border: 1px solid rgba(16, 185, 129, 0.3); margin-top: 10px;}
         .table-nhap th { background: rgba(16, 185, 129, 0.1); color: #10b981; padding: 12px 5px; font-size: 11px; text-transform: uppercase; text-align: center; border-bottom: 1px solid rgba(16, 185, 129, 0.3); }
         .table-nhap td { padding: 6px; border-bottom: 1px solid rgba(255,255,255,0.05); text-align: center; vertical-align: middle;}
@@ -60,7 +58,6 @@
         .btn-icon:hover { transform: scale(1.3); }
         .input-locked { background: rgba(0,0,0,0.5) !important; border-color: rgba(74, 222, 128, 0.5) !important; color: #4ade80 !important; cursor: not-allowed; pointer-events: none; }
         
-        /* Nút thêm dòng trống thủ công dưới bảng */
         .btn-add-row { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px dashed #10b981; padding: 10px; width: 100%; border-radius: 6px; font-weight: bold; cursor: pointer; transition: 0.2s; margin-top: 10px; text-transform: uppercase; font-size: 12px; letter-spacing: 1px;}
         .btn-add-row:hover { background: rgba(16, 185, 129, 0.3); color: #fff; border-style: solid; }
 
@@ -68,8 +65,6 @@
         .flex-row > div { flex: 1; }
         .btn-add-item { background: #10b981; color: white; border: none; padding: 15px; font-size: 13px; font-weight: bold; cursor: pointer; border-radius: 6px; transition: 0.2s; width: 100%; letter-spacing: 1px; margin-top: 10px;}
         .btn-add-item:hover { filter: brightness(1.1); transform: translateY(-1px);}
-        .btn-del-item { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
-        .btn-del-item:hover { background: #ef4444; color: white; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -172,7 +167,6 @@
                 </div>
 
                 <button type="button" class="btn-add-row" onclick="themDongNhapVAT()">➕ THÊM DÒNG TRỐNG</button>
-
                 <button type="submit" class="btn-add-item">⬇️ LƯU LÔ HÀNG NÀY VÀO KHO VAT</button>
             </form>
 
@@ -250,6 +244,28 @@
     let lichSuVAT = {};
     let isAllExpanded = false;
 
+    // --- CÁC HÀM XỬ LÝ FLOAT TIỀN TỆ (V3.3) ---
+    function pFloat(s) {
+        if(typeof s === 'number') return s;
+        if(!s) return 0;
+        return parseFloat(String(s).replace(/\./g, '').replace(/,/g, '.')) || 0;
+    }
+
+    function fFloat(n) {
+        if(!n) return '0';
+        return Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 4 });
+    }
+
+    // Hàm nhận diện gõ phím cho phép 1 dấu phẩy
+    function formatTienInput(i) {
+        let v = String(i.value).replace(/[^0-9,]/g, '');
+        let p = v.split(',');
+        if(p.length > 2) p = [p[0], p.slice(1).join('')];
+        let n = p[0] ? parseInt(p[0], 10).toLocaleString('vi-VN') : '';
+        i.value = p.length === 2 ? n + ',' + p[1] : n;
+    }
+
+    // Đọc tiền bằng chữ (Luôn bo tròn tổng tiền thanh toán trước khi đọc)
     const mangSo = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
     function docBlock(so, dayDu) {
         let chuoi = ""; let tram = Math.floor(so / 100); so = so % 100; let chuc = Math.floor(so / 10); let donvi = so % 10;
@@ -258,7 +274,8 @@
         if (donvi > 0) { if (chuc > 0 && donvi == 1) chuoi += " mốt"; else if (chuc > 0 && donvi == 5) chuoi += " lăm"; else chuoi += " " + mangSo[donvi]; }
         return chuoi;
     }
-    function docTienBangChu(soTien) {
+    function docTienBangChu(soTienFloat) {
+        let soTien = Math.round(soTienFloat); // Bo tròn trước khi dịch ra chữ
         if (soTien == 0) return "Không đồng chẵn";
         let chuoi = "", hauto = " tỷ", ty = soTien;
         do {
@@ -299,7 +316,7 @@
     }
 
     // ==========================================
-    // THUẬT TOÁN BẢNG NHẬP LIỆU MISA V3.2 (AUTO-SPAWN)
+    // THUẬT TOÁN BẢNG NHẬP LIỆU MISA V3.3 (FLOAT AUTO-SPAWN)
     // ==========================================
     window.onload = () => { 
         for(let i=0; i<3; i++) themDongNhapVAT(); 
@@ -308,7 +325,6 @@
     function themDongNhapVAT() {
         let tr = document.createElement('tr');
         tr.className = 'row-nhap-vat';
-        // Đã xóa sạch nút ➕ ở cuối dòng, chỉ để lại thùng rác
         tr.innerHTML = `
             <td class="stt-nhap" style="color:#94a3b8; font-weight:bold; text-align:center;"></td>
             <td>
@@ -339,7 +355,6 @@
         danhSoThuTuNhap();
     }
 
-    // Cơ chế thông minh: Kiểm tra xem user có đang gõ ở dòng cuối cùng không, nếu có thì đẻ thêm 1 dòng trống
     function kiemTraTuDongThemDong(el) {
         let row = el.closest('tr');
         let tbody = document.getElementById('tbodyNhapVat');
@@ -348,10 +363,7 @@
         if (row === lastRow) {
             let ten = row.querySelector('.inp-ten').value.trim();
             let gia = row.querySelector('.inp-gia-truoc').value.trim();
-            // Nếu có gõ bất kỳ ký tự nào vào tên hoặc giá -> Lập tức đẻ dòng mới
-            if (ten !== "" || gia !== "") {
-                themDongNhapVAT();
-            }
+            if (ten !== "" || gia !== "") themDongNhapVAT();
         }
     }
 
@@ -375,17 +387,21 @@
         let inTruoc = row.querySelector('.inp-gia-truoc');
         let inThue = row.querySelector('.inp-thue');
         let inSau = row.querySelector('.inp-gia-sau');
-        let sl = parseInt(row.querySelector('.inp-sl').value) || 0;
+        let sl = pFloat(row.querySelector('.inp-sl').value) || 0;
         
-        let valTruoc = parseInt(inTruoc.value.replace(/\D/g, '')) || 0;
-        if(kieu === 'truoc') inTruoc.value = valTruoc === 0 ? '' : valTruoc.toLocaleString('vi-VN');
+        if (kieu === 'truoc') formatTienInput(inTruoc);
         
-        let thue = parseInt(inThue.value) || 0;
-        let sauThue = Math.round(valTruoc * (1 + thue/100));
-        inSau.value = sauThue === 0 ? '0' : sauThue.toLocaleString('vi-VN');
+        let valTruoc = pFloat(inTruoc.value);
+        let thue = pFloat(inThue.value);
+        
+        // Tính toán giữ nguyên số thập phân
+        let sauThue = valTruoc * (1 + thue/100);
+        sauThue = Math.round(sauThue * 10000) / 10000; // Khử lỗi JS (VD: 0.00000004)
+        
+        inSau.value = sauThue === 0 ? '0' : fFloat(sauThue);
         
         let thanhTien = sauThue * sl;
-        row.querySelector('.inp-thanh-tien').innerText = thanhTien.toLocaleString('vi-VN');
+        row.querySelector('.inp-thanh-tien').innerText = fFloat(thanhTien);
     }
 
     function luuLoHangVaoKhoVAT() {
@@ -402,9 +418,9 @@
             if (ten !== "") {
                 let phanLoai = row.querySelector('.inp-loai').value;
                 let sl = parseInt(row.querySelector('.inp-sl').value) || 1;
-                let giaTruoc = parseInt(row.querySelector('.inp-gia-truoc').value.replace(/\D/g,'')) || 0;
-                let thueRate = parseInt(row.querySelector('.inp-thue').value) || 0;
-                let giaSau = parseInt(row.querySelector('.inp-gia-sau').value.replace(/\D/g,'')) || 0;
+                let giaTruoc = pFloat(row.querySelector('.inp-gia-truoc').value);
+                let thueRate = pFloat(row.querySelector('.inp-thue').value);
+                let giaSau = pFloat(row.querySelector('.inp-gia-sau').value);
 
                 for(let i=0; i<sl; i++) {
                     duLieuKhoVAT.push({
@@ -424,7 +440,7 @@
         khoVatRef.set(duLieuKhoVAT).then(() => {
             showToast(`✅ Đã nhập ${count} kiện hàng vào Kho VAT!`);
             document.getElementById('tbodyNhapVat').innerHTML = '';
-            for(let i=0; i<3; i++) themDongNhapVAT(); // Tái tạo lại 3 dòng trống sạch sẽ
+            for(let i=0; i<3; i++) themDongNhapVAT(); 
         });
     }
 
@@ -447,7 +463,7 @@
         const tb = document.querySelector('#bangChoIn tbody');
         const search = document.getElementById('timKhoVAT').value.toLowerCase();
         const locLoai = document.getElementById('locPhanLoaiVAT').value;
-        const vatRateXuat = parseInt(document.getElementById('vatRate').value) || 0;
+        const vatRateXuat = pFloat(document.getElementById('vatRate').value);
         tb.innerHTML = ''; 
         
         let groupedData = {};
@@ -495,8 +511,9 @@
 
             group.items.forEach(item => {
                 let idx = item.indexGoc; 
-                let giaTruoc = item.don.giaTruoc || 0;
-                let giaSauXuat = Math.round(giaTruoc * (1 + vatRateXuat/100));
+                let giaTruoc = pFloat(item.don.giaTruoc);
+                let giaSauXuat = giaTruoc * (1 + vatRateXuat/100);
+                giaSauXuat = Math.round(giaSauXuat * 10000) / 10000;
 
                 tb.insertAdjacentHTML('beforeend', `
                     <tr class="child-row child_${groupId}" style="display: ${displayStyle};" data-tengoc="${group.tenSP}">
@@ -507,8 +524,8 @@
                             <span style="color:#10b981; font-size:10px;">NPP: ${item.don.nccTen||'-'} | MST: ${item.don.nccMST||'-'}</span>
                         </td>
                         <td><input type="text" class="vat-edit-input vatMaChild_${groupId} inp-ten-vat" placeholder="Tên VAT (nếu muốn in khác)..."></td>
-                        <td style="text-align:right; font-family:monospace; color:#fbbf24;">${giaTruoc.toLocaleString('vi-VN')}</td>
-                        <td style="text-align:right; font-family:monospace; color:#4ade80;">${giaSauXuat.toLocaleString('vi-VN')}</td>
+                        <td style="text-align:right; font-family:monospace; color:#fbbf24;">${fFloat(giaTruoc)}</td>
+                        <td style="text-align:right; font-family:monospace; color:#4ade80;">${fFloat(giaSauXuat)}</td>
                     </tr>
                 `);
             });
@@ -552,7 +569,7 @@
                     <td style="color:#ef4444; font-weight:bold;">${key}</td>
                     <td style="font-size:12px;">${bill.ngayVAT}</td>
                     <td>${bill.tenKH}<br><small>MST: ${bill.mstKH || 'N/A'}</small></td>
-                    <td style="text-align:right; font-weight:bold; color:#4ade80;">${(bill.tongSau||0).toLocaleString('vi-VN')} ₫</td>
+                    <td style="text-align:right; font-weight:bold; color:#4ade80;">${fFloat(bill.tongSau)} ₫</td>
                     <td style="text-align:center;"><button class="btn-sm btn-print-sm" onclick="moModalInLai('${key}')">👁️ In Lại</button></td>
                 </tr>`);
             }
@@ -585,7 +602,7 @@
     function layDuLieuChot(maBill) {
         let dateObj = document.getElementById('khNgayVAT').valueAsDate || new Date();
         let strNgayVAT = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
-        let vatRateOutput = parseInt(document.getElementById('vatRate').value) || 0;
+        let vatRateOutput = pFloat(document.getElementById('vatRate').value);
 
         let mangIn = [];
         let itemsGom = {};
@@ -599,7 +616,7 @@
                 let tenTuyChinh = row.querySelector('.inp-ten-vat').value.trim();
                 let tenChinhThucIn = tenTuyChinh !== "" ? tenTuyChinh : tenGoc;
 
-                let gTruoc = parseInt(d.giaTruoc) || 0;
+                let gTruoc = pFloat(d.giaTruoc);
                 let key = tenChinhThucIn + "_" + gTruoc;
                 if(!itemsGom[key]) itemsGom[key] = { ten: tenChinhThucIn, sl: 0, giaTruoc: gTruoc };
                 itemsGom[key].sl++;
@@ -611,7 +628,8 @@
 
         Object.values(itemsGom).forEach(i => {
             let thanhTienTruoc = i.giaTruoc * i.sl;
-            let giaSauCal = Math.round(i.giaTruoc * rateMul);
+            let giaSauCal = i.giaTruoc * rateMul;
+            giaSauCal = Math.round(giaSauCal * 10000) / 10000;
             let thanhTienSau = giaSauCal * i.sl;
             
             i.giaSau = giaSauCal;
@@ -661,7 +679,7 @@
         });
     }
 
-    // TEMPLATE IN HÓA ĐƠN VAT CHUẨN
+    // TEMPLATE IN HÓA ĐƠN VAT CHUẨN (HỖ TRỢ FLOAT)
     function veTrangInVAT(data, mode) {
         if(!data || !data.items) return;
         let pNgay = data.ngayVAT.split('/'); 
@@ -709,15 +727,15 @@
         let stt = 1;
         data.items.forEach(g => {
             let thanhTienSau = g.giaSau * g.sl;
-            html += `<tr><td>${stt++}</td><td class="text-left">${g.ten}</td><td>Chiếc</td><td>${g.sl.toLocaleString('vi-VN')}</td><td class="text-right">${g.giaTruoc.toLocaleString('vi-VN')}</td><td class="text-right">${g.giaSau.toLocaleString('vi-VN')}</td><td class="text-right">${thanhTienSau.toLocaleString('vi-VN')}</td></tr>`;
+            html += `<tr><td>${stt++}</td><td class="text-left">${g.ten}</td><td>Chiếc</td><td>${g.sl}</td><td class="text-right">${fFloat(g.giaTruoc)}</td><td class="text-right">${fFloat(g.giaSau)}</td><td class="text-right">${fFloat(thanhTienSau)}</td></tr>`;
         });
         
         let tienThue = data.tongSau - data.tongTruoc;
 
         html += `</tbody>
-            <tr><td colspan="5" class="tong-hop">Cộng tiền hàng (Trước thuế):</td><td colspan="2" class="text-right" style="border:1px solid #000; font-weight:bold;">${data.tongTruoc.toLocaleString('vi-VN')}</td></tr>
-            <tr><td colspan="5" class="tong-hop">Tiền thuế VAT: <span style="margin-left:20px; font-weight:bold;">${data.vatRate}%</span></td><td colspan="2" class="text-right" style="border:1px solid #000;">${tienThue.toLocaleString('vi-VN')}</td></tr>
-            <tr><td colspan="5" class="tong-hop">Tổng tiền thanh toán:</td><td colspan="2" class="text-right" style="border:1px solid #000; font-weight:bold; color:#b91c1c;">${data.tongSau.toLocaleString('vi-VN')}</td></tr>
+            <tr><td colspan="5" class="tong-hop">Cộng tiền hàng (Trước thuế):</td><td colspan="2" class="text-right" style="border:1px solid #000; font-weight:bold;">${fFloat(data.tongTruoc)}</td></tr>
+            <tr><td colspan="5" class="tong-hop">Tiền thuế VAT: <span style="margin-left:20px; font-weight:bold;">${data.vatRate}%</span></td><td colspan="2" class="text-right" style="border:1px solid #000;">${fFloat(tienThue)}</td></tr>
+            <tr><td colspan="5" class="tong-hop">Tổng tiền thanh toán:</td><td colspan="2" class="text-right" style="border:1px solid #000; font-weight:bold; color:#b91c1c;">${fFloat(data.tongSau)}</td></tr>
         </table>
         
         <div style="margin-top:10px; font-weight:bold; font-size:14px;">Số tiền viết bằng chữ: <i style="font-weight:normal; text-decoration:underline;">${docTienBangChu(data.tongSau)}</i></div>
