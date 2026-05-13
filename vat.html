@@ -3,26 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Phân Hệ Xuất VAT (V2.0 - Độc Lập Hoàn Toàn)</title>
+    <title>TechWave PC - Phân Hệ Xuất VAT (V2.1 - Custom Layout)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; padding: 20px; color: #e2e8f0; margin: 0; min-height: 100vh; }
         .container { max-width: 1550px; margin: auto; background: #111827; padding: 30px; border-radius: 12px; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5); border: 1px solid rgba(220, 38, 38, 0.2); border-top: 4px solid #ef4444; }
         h2 { text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 20px; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; color: #ef4444; font-size: 22px; margin-top: 0; }
-        .layout-grid { display: grid; grid-template-columns: 420px 1fr; gap: 25px; }
+        
+        /* Chia 2 cột: Trái (Cài đặt Hóa đơn) - Phải (Nhập liệu & Danh sách) */
+        .layout-grid { display: grid; grid-template-columns: 380px 1fr; gap: 25px; }
+        
         .form-card { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 12px; height: fit-content; }
         .card-title { color: #94a3b8; font-size: 13px; text-transform: uppercase; font-weight: bold; border-bottom: 1px dashed rgba(255,255,255,0.1); padding-bottom: 10px;}
         .form-group { display: flex; flex-direction: column; gap: 6px;}
         .form-group label { font-size: 11px; color: #cbd5e1; font-weight: bold; text-transform: uppercase;}
         .form-group input, .form-group select { padding: 10px 12px; background-color: #0f172a; color: #fff; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; outline: none; transition: 0.3s; font-size: 13px; width: 100%; box-sizing: border-box; }
         .form-group input:focus, .form-group select:focus { border-color: #ef4444; background-color: #000; }
-        .btn-main { color: #fff; border: none; padding: 12px; cursor: pointer; border-radius: 6px; font-weight: bold; transition: 0.2s; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
-        .btn-main:hover { filter: brightness(1.1); }
+        
+        .btn-main { color: #fff; border: none; padding: 15px; cursor: pointer; border-radius: 6px; font-weight: bold; transition: 0.2s; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; text-align: center; }
+        .btn-main:hover { filter: brightness(1.1); transform: translateY(-1px); }
         .btn-sm { padding: 8px 15px; font-size: 12px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer;}
         .btn-print-sm { background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
         .btn-print-sm:hover { background: rgba(239, 68, 68, 0.2); }
+        
         table { width: 100%; border-collapse: collapse; font-size: 13px;}
         th, td { padding: 10px 8px; text-align: left; vertical-align: middle; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
         th { color: #ef4444; text-transform: uppercase; font-size: 11px; letter-spacing: 1px; border-bottom: 2px solid rgba(255, 255, 255, 0.1); position: sticky; top: 0; background: #1e293b; z-index: 1;}
+        
         #status-mang { position: fixed; bottom: 15px; right: 15px; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); z-index: 999; }
         .online { color: #4ade80; } .offline { color: #f87171; }
         #thongBaoToast { position: fixed; top: 25px; right: 25px; background: #ef4444; color: #fff; padding: 15px 25px; border-radius: 8px; font-weight: bold; z-index: 9999; display: none; }
@@ -38,9 +44,9 @@
         .child-row { background: rgba(0,0,0,0.2); }
         .child-row td { padding-top: 8px; padding-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.05); }
         
-        .flex-row { display: flex; gap: 10px; }
+        .flex-row { display: flex; gap: 12px; align-items: center; }
         .flex-row > div { flex: 1; }
-        .btn-add-item { background: #10b981; color: white; border: none; padding: 10px; font-weight: bold; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        .btn-add-item { background: #10b981; color: white; border: none; padding: 12px; font-size: 12px; font-weight: bold; cursor: pointer; border-radius: 6px; transition: 0.2s; }
         .btn-add-item:hover { filter: brightness(1.1); }
         .btn-del-item { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; }
         .btn-del-item:hover { background: #ef4444; color: white; }
@@ -76,44 +82,55 @@
 <div class="container">
     <h2 style="margin-top: 40px;">HỆ THỐNG XUẤT HÓA ĐƠN VAT (ĐỘC LẬP)</h2>
     <div class="layout-grid">
+        
         <div style="display: flex; flex-direction: column; gap: 15px;">
             
-            <form id="formVAT" class="form-card" style="border: 1px solid rgba(56, 189, 248, 0.3);">
-                <div class="card-title" style="color: #38bdf8;">📝 1. THÔNG TIN KHÁCH & ĐƠN VỊ XUẤT</div>
+            <div class="form-card" style="border: 1px solid rgba(56, 189, 248, 0.3);">
+                <div class="card-title" style="color: #38bdf8;">🏢 1. THÔNG TIN BÊN BÁN (ĐƠN VỊ XUẤT)</div>
+                <div class="form-group"><label>Tên Công Ty Xuất VAT</label><input type="text" id="ppTen" value="CÔNG TY TNHH CÔNG NGHỆ TECHWAVE"></div>
+                <div class="form-group"><label>Mã Số Thuế Bên Bán</label><input type="text" id="ppMST" value="0110335168"></div>
+                <div class="form-group"><label>Địa Chỉ / Trụ Sở Bên Bán</label><input type="text" id="ppDiaChi" value="Số 12 ngõ 66 phố Hoàng Ngân, P.Thanh Xuân, TP.Hà Nội"></div>
+            </div>
+
+            <div class="form-card" style="border: 1px solid rgba(168, 85, 247, 0.3);">
+                <div class="card-title" style="color: #a855f7;">👤 2. THÔNG TIN KHÁCH HÀNG (BÊN MUA)</div>
+                <div class="form-group"><label>Tên Khách / Tên Cty Mua *</label><input type="text" id="khTen" placeholder="VD: Công ty TNHH GUNO" required></div>
+                <div class="form-group"><label>Mã Số Thuế Khách Mua</label><input type="text" id="khMST" placeholder="VD: 0111423995..."></div>
+                <div class="form-group"><label>Địa Chỉ Đăng Ký Thuế (Khách)</label><input type="text" id="khDiaChi" placeholder="Nhập địa chỉ..."></div>
+            </div>
+            
+            <div class="form-card" style="border: 1px solid rgba(239, 68, 68, 0.3);">
+                <div class="card-title" style="color: #ef4444;">⚙️ 3. THIẾT LẬP KẾ TOÁN</div>
                 <div class="flex-row">
-                    <div class="form-group"><label>Tên Khách Mua *</label><input type="text" id="khTen" placeholder="Cty TNHH A..." required></div>
-                    <div class="form-group"><label>Mã Số Thuế Khách</label><input type="text" id="khMST" placeholder="012345..."></div>
-                </div>
-                <div class="form-group"><label>Địa Chỉ Khách Hàng</label><input type="text" id="khDiaChi" placeholder="Nhập địa chỉ..."></div>
-                
-                <div class="flex-row" style="margin-top: 5px;">
-                    <div class="form-group"><label>Tên Đơn Vị Xuất</label><input type="text" id="ppTen" value="CÔNG TY TNHH CÔNG NGHỆ TECHWAVE"></div>
-                    <div class="form-group"><label>MST Đơn Vị</label><input type="text" id="ppMST" value="0110335168"></div>
-                </div>
-                
-                <div class="flex-row" style="margin-top: 5px; border-top: 1px dashed rgba(255,255,255,0.1); padding-top: 10px;">
-                    <div class="form-group"><label>📅 Ngày Xuất Hóa Đơn</label><input type="date" id="khNgayVAT" required></div>
+                    <div class="form-group"><label>📅 Ngày Ghi Nhận</label><input type="date" id="khNgayVAT" required></div>
                     <div class="form-group">
-                        <label>📈 Mức Thuế VAT</label>
+                        <label>📈 Mức Thuế Suất</label>
                         <select id="vatRate">
-                            <option value="5">5%</option>
-                            <option value="8" selected>8%</option>
-                            <option value="10">10%</option>
+                            <option value="5">Thuế suất 5%</option>
+                            <option value="8" selected>Thuế suất 8%</option>
+                            <option value="10">Thuế suất 10%</option>
                         </select>
                     </div>
                 </div>
-            </form>
-
-            <form id="formThemHang" class="form-card" style="border: 1px solid rgba(16, 185, 129, 0.3);" onsubmit="event.preventDefault(); themVaoGio();">
-                <div class="card-title" style="color: #10b981;">🛒 2. NHẬP LIỆU HÀNG HÓA VÀO HÓA ĐƠN</div>
                 
-                <div class="form-group">
-                    <label>Tên Hàng Hóa (Gõ Full Tên Thực Tế)</label>
-                    <input type="text" id="inTenSP" placeholder="VD: VGA Zotac RTX 5060 Twin Edge..." required>
+                <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
+                    <button type="button" class="btn-main" style="background: #0284c7;" onclick="xemBaoGiaVAT()">📄 XEM TRƯỚC BẢN NHÁP</button>
+                    <button type="button" class="btn-main" style="background: #ef4444;" onclick="chotDonVAT()">🔴 CHỐT ĐƠN & LƯU SỔ</button>
                 </div>
+            </div>
+        </div>
+
+        <div class="right-col" style="display: flex; flex-direction: column; gap: 20px;">
+            
+            <form id="formThemHang" class="form-card" style="border: 1px solid #10b981;" onsubmit="event.preventDefault(); themVaoGio();">
+                <div class="card-title" style="color: #10b981;">➕ THÊM HÀNG HÓA VÀO HÓA ĐƠN NÀY</div>
                 
                 <div class="flex-row">
-                    <div class="form-group">
+                    <div class="form-group" style="flex: 2;">
+                        <label>Tên Hàng Hóa (Nhập Full Tên Cần In)</label>
+                        <input type="text" id="inTenSP" placeholder="VD: VGA Zotac RTX 5060 Twin Edge..." required>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
                         <label>Phân Loại (Để Gom Nhóm)</label>
                         <select id="inPhanLoai">
                             <option value="Main">Mainboard</option><option value="CPU">CPU</option>
@@ -123,39 +140,37 @@
                             <option value="Màn hình">Màn hình</option><option value="Phụ kiện">Khác</option>
                         </select>
                     </div>
-                    <div class="form-group"><label>Nhà Cung Cấp VAT</label><input type="text" id="inNCC" placeholder="VD: SPC..."></div>
                 </div>
 
                 <div class="flex-row">
-                    <div class="form-group"><label>Mã VAT (Tùy chọn)</label><input type="text" id="inMaVAT" placeholder="VD: EN45990"></div>
-                    <div class="form-group" style="flex:0.5;"><label>Số Lượng</label><input type="number" id="inSL" value="1" min="1" required></div>
-                    <div class="form-group"><label>Đơn Giá (Chưa VAT)</label><input type="text" id="inGia" placeholder="Giá..." required oninput="formatTienNay(this)"></div>
+                    <div class="form-group" style="flex: 0.5;">
+                        <label>Số Lượng</label>
+                        <input type="number" id="inSL" value="1" min="1" required style="text-align: center; font-weight: bold; color: #38bdf8;">
+                    </div>
+                    <div class="form-group" style="flex: 1.5;">
+                        <label>Đơn Giá VAT (1 Chiếc)</label>
+                        <input type="text" id="inGia" placeholder="Giá..." required oninput="formatTienNay(this)" style="font-weight: bold;">
+                    </div>
+                    <div class="form-group" style="flex: 1; align-self: flex-end;">
+                        <button type="submit" class="btn-add-item">⬇️ ĐƯA VÀO GIỎ</button>
+                    </div>
                 </div>
-
-                <button type="submit" class="btn-add-item" style="margin-top: 5px;">➕ THÊM MÓN NÀY VÀO HÓA ĐƠN</button>
             </form>
 
-            <div style="display: flex; gap: 10px;">
-                <button type="button" class="btn-main" style="background: #0284c7; flex:1;" onclick="xemBaoGiaVAT()">📄 XEM BẢN NHÁP</button>
-                <button type="button" class="btn-main" style="background: #ef4444; flex:1;" onclick="chotDonVAT()">🔴 CHỐT & LƯU HÓA ĐƠN</button>
-            </div>
-        </div>
-
-        <div class="right-col">
             <div class="form-card" style="padding: 0; overflow: hidden;">
                 <div class="card-title" style="padding: 15px 20px 10px 20px; margin: 0; background: rgba(0,0,0,0.2);">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <span style="color: #facc15;">📦 HÀNG HÓA ĐANG CÓ TRONG HÓA ĐƠN</span>
-                        <span id="tongTienGio" style="color: #4ade80; font-weight:bold; font-size:14px;">0 ₫</span>
+                        <span style="color: #facc15;">📦 HÀNG HÓA ĐANG NẰM TRONG HÓA ĐƠN</span>
+                        <span id="tongTienGio" style="color: #4ade80; font-weight:bold; font-size:15px; border: 1px solid rgba(74, 222, 128, 0.3); padding: 4px 10px; border-radius: 4px; background: rgba(74, 222, 128, 0.1);">0 ₫</span>
                     </div>
                 </div>
-                <div style="max-height: 400px; overflow-y: auto;">
+                <div style="max-height: 350px; overflow-y: auto;">
                     <table id="bangGioHang">
                         <thead><tr>
-                            <th style="width: 50%;">Tên Hàng Hóa</th>
+                            <th style="width: 50%;">Tên Hàng Hóa Sẽ In</th>
                             <th style="width: 15%; text-align:center;">Số Lượng</th>
                             <th style="width: 25%; text-align: right;">Đơn Giá VAT</th>
-                            <th style="width: 10%; text-align: center;">Thao tác</th>
+                            <th style="width: 10%; text-align: center;">Bỏ</th>
                         </tr></thead>
                         <tbody></tbody>
                     </table>
@@ -191,11 +206,11 @@
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
     
-    // TRANG NÀY ĐỘC LẬP TUYỆT ĐỐI, CHỈ CHƠI VỚI BẢNG LỊCH SỬ VAT
+    // TRANG NÀY ĐỘC LẬP TUYỆT ĐỐI, CHỈ LƯU VÀ ĐỌC Ở LỊCH SỬ VAT
     const vatRef = database.ref('LichSuVAT'); 
     
     let lichSuVAT = {};
-    let gioHangVAT = []; // Giỏ hàng lưu cục bộ trên giao diện
+    let gioHangVAT = []; // Giỏ hàng ảo tạm thời trên giao diện
     
     // Đọc tiền bằng chữ
     const mangSo = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
@@ -237,29 +252,24 @@
 
     vatRef.on('value', s => { lichSuVAT = s.val() || {}; hienThiLichSu(); });
 
-    // HỆ THỐNG GIỎ HÀNG VAT ĐỘC LẬP
+    // HỆ THỐNG GIỎ HÀNG VAT
     function themVaoGio() {
         let ten = document.getElementById('inTenSP').value.trim();
         let phanLoai = document.getElementById('inPhanLoai').value;
-        let ncc = document.getElementById('inNCC').value.trim();
-        let maVAT = document.getElementById('inMaVAT').value.trim();
         let sl = parseInt(document.getElementById('inSL').value) || 1;
         let gia = parseInt(document.getElementById('inGia').value.replace(/\D/g,'')) || 0;
 
-        // Định danh y như sếp muốn
-        let tenThucTe = maVAT ? `${maVAT}_${ten}` : ten;
-
         gioHangVAT.push({
-            idObj: Date.now() + Math.random(), // ID Độc nhất
-            tenSP: tenThucTe,
+            idObj: Date.now() + Math.random(),
+            tenSP: ten, // Giữ nguyên tên người dùng gõ
             phanLoai: phanLoai,
-            ncc: ncc,
             sl: sl,
             giaBan: gia
         });
 
-        document.getElementById('formThemHang').reset();
+        document.getElementById('inTenSP').value = '';
         document.getElementById('inSL').value = 1;
+        document.getElementById('inGia').value = '';
         document.getElementById('inTenSP').focus();
         hienThiGioHangVAT();
     }
@@ -275,7 +285,7 @@
         let tongTien = 0;
         
         if(gioHangVAT.length === 0) {
-            tb.innerHTML = `<tr><td colspan="4" class="empty-state">Hóa đơn đang trống. Hãy nhập liệu bên trái!</td></tr>`;
+            tb.innerHTML = `<tr><td colspan="4" class="empty-state">Hóa đơn chưa có hàng. Vui lòng nhập liệu bên trên!</td></tr>`;
             document.getElementById('tongTienGio').innerText = '0 ₫';
             return;
         }
@@ -308,10 +318,7 @@
                 tongTien += (item.giaBan * item.sl);
                 tb.insertAdjacentHTML('beforeend', `
                     <tr class="child-row ${gId}">
-                        <td style="padding-left: 25px; font-weight:bold; color:#e2e8f0; font-size:12px;">
-                            ${item.tenSP}
-                            ${item.ncc ? `<br><span style="color:#10b981; font-size:10px; font-weight:normal;">NCC VAT: ${item.ncc}</span>` : ''}
-                        </td>
+                        <td style="padding-left: 25px; font-weight:bold; color:#e2e8f0; font-size:12px;">${item.tenSP}</td>
                         <td style="text-align:center;">${item.sl}</td>
                         <td style="text-align:right; color:#fbbf24;">${item.giaBan.toLocaleString('vi-VN')}</td>
                         <td style="text-align:center;">
@@ -336,7 +343,7 @@
         iconSpan.innerText = isOpening ? '▼' : '►';
     }
 
-    // AUTH ADMIN CHO LỊCH SỬ IN
+    // AUTH ADMIN CHO LỊCH SỬ IN LẠI
     function moModalInLai(maBill) {
         document.getElementById('adminModal').style.display = 'flex';
         document.getElementById('luuMaBillInLai').value = maBill;
@@ -409,17 +416,26 @@
 
     function xemBaoGiaVAT() {
         if (gioHangVAT.length === 0) { alert("Chưa có mặt hàng nào trong hóa đơn!"); return; }
+        
+        // Cảnh báo nếu chưa nhập thông tin khách
+        let tenKhach = document.getElementById('khTen').value.trim();
+        if(!tenKhach) { alert("Vui lòng nhập Tên Khách Hàng (Bên Mua) ở cột bên trái!"); document.getElementById('khTen').focus(); return; }
+        
         let r = layDuLieuChot("NHAP-VAT"); veTrangInVAT(r, 'nhap');
     }
 
     function chotDonVAT() {
         if (gioHangVAT.length === 0) { alert("Chưa có mặt hàng nào trong hóa đơn!"); return; }
+        
+        let tenKhach = document.getElementById('khTen').value.trim();
+        if(!tenKhach) { alert("Vui lòng nhập Tên Khách Hàng (Bên Mua) ở cột bên trái!"); document.getElementById('khTen').focus(); return; }
+
         let maVAT = taoMaVATMoi(); 
         let record = layDuLieuChot(maVAT);
 
         vatRef.child(maVAT).set(record).then(() => {
             showToast("✅ ĐÃ LƯU HÓA ĐƠN ĐỎ THÀNH CÔNG!"); 
-            // Chỉ xóa thông tin Khách và Giỏ hàng, giữ nguyên Cty xuất
+            // Xóa thông tin Khách và Giỏ hàng sau khi xuất
             document.getElementById('khTen').value = '';
             document.getElementById('khMST').value = '';
             document.getElementById('khDiaChi').value = '';
@@ -476,7 +492,6 @@
         
         let stt = 1; let tongTienHang = 0;
         
-        // Vì nhập tay nên không gộp tự động nữa, người dùng nhập sao in y vậy
         data.items.forEach(g => {
             let sub = g.giaBan * g.sl; tongTienHang += sub;
             html += `<tr><td>${stt++}</td><td class="text-left">${g.tenChinhThuc}</td><td>Chiếc</td><td>${g.sl.toLocaleString('vi-VN')}</td><td class="text-right">${g.giaBan.toLocaleString('vi-VN')}</td><td class="text-right">${sub.toLocaleString('vi-VN')}</td></tr>`;
