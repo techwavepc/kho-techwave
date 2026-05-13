@@ -3,13 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Phân Hệ Xuất VAT (V2.1 - Custom Layout)</title>
+    <title>TechWave PC - Phân Hệ Xuất VAT (V2.2 - Kèm NPP Đầu Vào)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; padding: 20px; color: #e2e8f0; margin: 0; min-height: 100vh; }
         .container { max-width: 1550px; margin: auto; background: #111827; padding: 30px; border-radius: 12px; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5); border: 1px solid rgba(220, 38, 38, 0.2); border-top: 4px solid #ef4444; }
         h2 { text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 20px; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 2px; color: #ef4444; font-size: 22px; margin-top: 0; }
         
-        /* Chia 2 cột: Trái (Cài đặt Hóa đơn) - Phải (Nhập liệu & Danh sách) */
         .layout-grid { display: grid; grid-template-columns: 380px 1fr; gap: 25px; }
         
         .form-card { background: #1e293b; padding: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.03); display: flex; flex-direction: column; gap: 12px; height: fit-content; }
@@ -143,6 +142,21 @@
                 </div>
 
                 <div class="flex-row">
+                    <div class="form-group" style="flex: 1.5;">
+                        <label style="color:#10b981;">Tên Nhà Phân Phối (Đầu vào)</label>
+                        <input type="text" id="inNccTen" placeholder="VD: Công ty máy tính SPC..." style="border-color:rgba(16, 185, 129, 0.4);">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label style="color:#10b981;">MST NPP</label>
+                        <input type="text" id="inNccMST" placeholder="Mã số thuế..." style="border-color:rgba(16, 185, 129, 0.4);">
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label style="color:#10b981;">Địa chỉ NPP</label>
+                        <input type="text" id="inNccDiaChi" placeholder="Địa chỉ..." style="border-color:rgba(16, 185, 129, 0.4);">
+                    </div>
+                </div>
+
+                <div class="flex-row">
                     <div class="form-group" style="flex: 0.5;">
                         <label>Số Lượng</label>
                         <input type="number" id="inSL" value="1" min="1" required style="text-align: center; font-weight: bold; color: #38bdf8;">
@@ -152,7 +166,7 @@
                         <input type="text" id="inGia" placeholder="Giá..." required oninput="formatTienNay(this)" style="font-weight: bold;">
                     </div>
                     <div class="form-group" style="flex: 1; align-self: flex-end;">
-                        <button type="submit" class="btn-add-item">⬇️ ĐƯA VÀO GIỎ</button>
+                        <button type="submit" class="btn-add-item">➕ THÊM</button>
                     </div>
                 </div>
             </form>
@@ -210,7 +224,7 @@
     const vatRef = database.ref('LichSuVAT'); 
     
     let lichSuVAT = {};
-    let gioHangVAT = []; // Giỏ hàng ảo tạm thời trên giao diện
+    let gioHangVAT = []; 
     
     // Đọc tiền bằng chữ
     const mangSo = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
@@ -256,20 +270,28 @@
     function themVaoGio() {
         let ten = document.getElementById('inTenSP').value.trim();
         let phanLoai = document.getElementById('inPhanLoai').value;
+        let nccTen = document.getElementById('inNccTen').value.trim();
+        let nccMST = document.getElementById('inNccMST').value.trim();
+        let nccDiaChi = document.getElementById('inNccDiaChi').value.trim();
+        
         let sl = parseInt(document.getElementById('inSL').value) || 1;
         let gia = parseInt(document.getElementById('inGia').value.replace(/\D/g,'')) || 0;
 
         gioHangVAT.push({
             idObj: Date.now() + Math.random(),
-            tenSP: ten, // Giữ nguyên tên người dùng gõ
+            tenSP: ten, 
             phanLoai: phanLoai,
+            nccTen: nccTen,
+            nccMST: nccMST,
+            nccDiaChi: nccDiaChi,
             sl: sl,
             giaBan: gia
         });
 
+        // Chỉ reset Tên và Giá, giữ nguyên NPP để nhập nhanh mã tiếp theo
         document.getElementById('inTenSP').value = '';
-        document.getElementById('inSL').value = 1;
         document.getElementById('inGia').value = '';
+        document.getElementById('inSL').value = 1;
         document.getElementById('inTenSP').focus();
         hienThiGioHangVAT();
     }
@@ -290,7 +312,6 @@
             return;
         }
 
-        // Nhóm lại theo phân loại để trổ ra (Accordion)
         let grouped = {};
         gioHangVAT.forEach(item => {
             if(!grouped[item.phanLoai]) grouped[item.phanLoai] = [];
@@ -304,7 +325,6 @@
             let items = grouped[loai];
             let gId = "grp_" + loai.replace(/\s/g,'');
             
-            // Dòng Master của nhóm
             tb.insertAdjacentHTML('beforeend', `
                 <tr class="group-header" onclick="toggleGioHang('${gId}')" style="border-top: 1px solid rgba(255,255,255,0.1);">
                     <td colspan="4" style="font-weight: bold; color: #38bdf8; font-size:13px; padding: 10px;">
@@ -313,12 +333,21 @@
                 </tr>
             `);
 
-            // Các món con bên trong
             items.forEach(item => {
                 tongTien += (item.giaBan * item.sl);
+                
+                // Hiển thị thông tin đối chứng NPP trên giao diện
+                let nccInfo = '';
+                if(item.nccTen || item.nccMST) {
+                    nccInfo = `<br><span style="color:#10b981; font-size:10px; font-weight:normal;">NPP: ${item.nccTen || '-'} | MST: ${item.nccMST || '-'} | ĐC: ${item.nccDiaChi || '-'}</span>`;
+                }
+
                 tb.insertAdjacentHTML('beforeend', `
                     <tr class="child-row ${gId}">
-                        <td style="padding-left: 25px; font-weight:bold; color:#e2e8f0; font-size:12px;">${item.tenSP}</td>
+                        <td style="padding-left: 25px; font-weight:bold; color:#e2e8f0; font-size:12px;">
+                            ${item.tenSP}
+                            ${nccInfo}
+                        </td>
                         <td style="text-align:center;">${item.sl}</td>
                         <td style="text-align:right; color:#fbbf24;">${item.giaBan.toLocaleString('vi-VN')}</td>
                         <td style="text-align:center;">
@@ -397,8 +426,15 @@
         let dateObj = document.getElementById('khNgayVAT').valueAsDate || new Date();
         let strNgayVAT = `${String(dateObj.getDate()).padStart(2,'0')}/${String(dateObj.getMonth()+1).padStart(2,'0')}/${dateObj.getFullYear()}`;
 
-        // Chuẩn hóa dữ liệu giỏ hàng để in
-        let itemsIn = gioHangVAT.map(i => ({ tenChinhThuc: i.tenSP, giaBan: i.giaBan, sl: i.sl }));
+        // Chuẩn hóa dữ liệu giỏ hàng để in (Có lưu cả NPP vào Cloud để tra cứu ngầm)
+        let itemsIn = gioHangVAT.map(i => ({ 
+            tenChinhThuc: i.tenSP, 
+            giaBan: i.giaBan, 
+            sl: i.sl,
+            nccTen: i.nccTen,
+            nccMST: i.nccMST,
+            nccDiaChi: i.nccDiaChi
+        }));
 
         return { 
             maBill: maBill, 
@@ -416,8 +452,6 @@
 
     function xemBaoGiaVAT() {
         if (gioHangVAT.length === 0) { alert("Chưa có mặt hàng nào trong hóa đơn!"); return; }
-        
-        // Cảnh báo nếu chưa nhập thông tin khách
         let tenKhach = document.getElementById('khTen').value.trim();
         if(!tenKhach) { alert("Vui lòng nhập Tên Khách Hàng (Bên Mua) ở cột bên trái!"); document.getElementById('khTen').focus(); return; }
         
@@ -426,7 +460,6 @@
 
     function chotDonVAT() {
         if (gioHangVAT.length === 0) { alert("Chưa có mặt hàng nào trong hóa đơn!"); return; }
-        
         let tenKhach = document.getElementById('khTen').value.trim();
         if(!tenKhach) { alert("Vui lòng nhập Tên Khách Hàng (Bên Mua) ở cột bên trái!"); document.getElementById('khTen').focus(); return; }
 
@@ -435,17 +468,13 @@
 
         vatRef.child(maVAT).set(record).then(() => {
             showToast("✅ ĐÃ LƯU HÓA ĐƠN ĐỎ THÀNH CÔNG!"); 
-            // Xóa thông tin Khách và Giỏ hàng sau khi xuất
-            document.getElementById('khTen').value = '';
-            document.getElementById('khMST').value = '';
-            document.getElementById('khDiaChi').value = '';
-            gioHangVAT = []; 
-            hienThiGioHangVAT();
+            document.getElementById('khTen').value = ''; document.getElementById('khMST').value = ''; document.getElementById('khDiaChi').value = '';
+            gioHangVAT = []; hienThiGioHangVAT();
             veTrangInVAT(record, 'chot');
         });
     }
 
-    // TEMPLATE IN VAT CHUẨN ĐỎ
+    // TEMPLATE IN VAT CHUẨN ĐỎ (CHỈ IN TÊN, ẨN NPP ĐẦU VÀO)
     function veTrangInVAT(data, mode) {
         if(!data || !data.items) return;
         let pNgay = data.ngayVAT.split('/'); 
@@ -494,6 +523,7 @@
         
         data.items.forEach(g => {
             let sub = g.giaBan * g.sl; tongTienHang += sub;
+            // Chỉ in tên, không in thông tin NPP đầu vào
             html += `<tr><td>${stt++}</td><td class="text-left">${g.tenChinhThuc}</td><td>Chiếc</td><td>${g.sl.toLocaleString('vi-VN')}</td><td class="text-right">${g.giaBan.toLocaleString('vi-VN')}</td><td class="text-right">${sub.toLocaleString('vi-VN')}</td></tr>`;
         });
         
