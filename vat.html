@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <title>TechWave PC - Phân Hệ Xuất VAT (V3.3 - Precision Currency)</title>
+    <title>TechWave PC - Phân Hệ Xuất VAT (V3.5 - Final Rounding)</title>
     <style>
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0f172a; padding: 20px; color: #e2e8f0; margin: 0; min-height: 100vh; }
         .container { max-width: 1550px; margin: auto; background: #111827; padding: 30px; border-radius: 12px; box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.5); border: 1px solid rgba(220, 38, 38, 0.2); border-top: 4px solid #ef4444; }
@@ -30,7 +30,7 @@
         
         #status-mang { position: fixed; bottom: 15px; right: 15px; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: bold; background: #0f172a; border: 1px solid rgba(255,255,255,0.1); z-index: 999; }
         .online { color: #4ade80; } .offline { color: #f87171; }
-        #thongBaoToast { position: fixed; top: 25px; right: 25px; background: #ef4444; color: #fff; padding: 15px 25px; border-radius: 8px; font-weight: bold; z-index: 9999; display: none; }
+        #thongBaoToast { position: fixed; top: 25px; right: 25px; background: #10b981; color: #fff; padding: 15px 25px; border-radius: 8px; font-weight: bold; z-index: 9999; display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
         .empty-state { text-align: center; padding: 30px; color: #64748b; font-style: italic;}
         .search-bill { width: 100%; padding: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #fff; margin-bottom: 10px; font-size: 12px; box-sizing: border-box;}
         
@@ -65,25 +65,19 @@
         .flex-row > div { flex: 1; }
         .btn-add-item { background: #10b981; color: white; border: none; padding: 15px; font-size: 13px; font-weight: bold; cursor: pointer; border-radius: 6px; transition: 0.2s; width: 100%; letter-spacing: 1px; margin-top: 10px;}
         .btn-add-item:hover { filter: brightness(1.1); transform: translateY(-1px);}
+        .btn-del-item { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; transition: 0.2s;}
+        .btn-del-item:hover { background: #ef4444; color: white; }
+
+        .total-box { display: flex; justify-content: flex-end; gap: 30px; padding: 15px; background: rgba(16, 185, 129, 0.05); border: 1px dashed rgba(16, 185, 129, 0.3); margin-top: 15px; border-radius: 8px;}
+        .total-item { text-align: right; }
+        .total-item span { display: block; font-size: 11px; color: #94a3b8; text-transform: uppercase; font-weight: bold; margin-bottom: 5px; }
+        .total-item strong { font-size: 16px; color: #4ade80; font-family: monospace; }
+        .total-item.final strong { color: #ef4444; font-size: 20px; }
     </style>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 </head>
 <body>
-
-<div id="adminModal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:10000; align-items:center; justify-content:center;">
-    <div style="background:#1e293b; padding:25px; border-radius:8px; border:2px solid #ef4444; width:320px; display:flex; flex-direction:column; gap:15px; box-shadow: 0 10px 30px rgba(0,0,0,0.8);">
-        <h3 style="color:#ef4444; margin:0; text-align:center; text-transform:uppercase;">🔐 Bảo Mật In Hóa Đơn</h3>
-        <p style="color:#94a3b8; font-size:12px; text-align:center; margin:0;">Vui lòng nhập tài khoản quản trị để xem lại Hóa đơn VAT cũ.</p>
-        <input type="text" id="admUser" placeholder="Tên đăng nhập" style="padding:12px; background:#0f172a; color:#fff; border:1px solid #334155; border-radius:4px; outline:none;">
-        <input type="password" id="admPass" placeholder="Mật khẩu" style="padding:12px; background:#0f172a; color:#fff; border:1px solid #334155; border-radius:4px; outline:none;">
-        <input type="hidden" id="luuMaBillInLai">
-        <div style="display:flex; gap:10px; margin-top:10px;">
-            <button onclick="xacNhanInLai()" style="flex:1; background:#ef4444; color:#fff; border:none; padding:12px; border-radius:4px; cursor:pointer; font-weight:bold; transition:0.2s;">XÁC NHẬN</button>
-            <button onclick="dongModalAdmin()" style="flex:1; background:#64748b; color:#fff; border:none; padding:12px; border-radius:4px; cursor:pointer; font-weight:bold; transition:0.2s;">HỦY BỎ</button>
-        </div>
-    </div>
-</div>
 
 <div class="nav-bar">
     <a href="index.html" class="nav-btn nav-kho">📦 VỀ KHO LINH KIỆN</a>
@@ -99,7 +93,6 @@
     <div class="layout-grid">
         
         <div style="display: flex; flex-direction: column; gap: 15px;">
-            
             <div class="form-card" style="border: 1px solid rgba(56, 189, 248, 0.3);">
                 <div class="card-title" style="color: #38bdf8;">🏢 1. THÔNG TIN BÊN BÁN (ĐƠN VỊ XUẤT)</div>
                 <div class="form-group"><label>Tên Công Ty Xuất VAT</label><input type="text" id="ppTen" value="CÔNG TY TNHH CÔNG NGHỆ TECHWAVE"></div>
@@ -127,7 +120,6 @@
                         </select>
                     </div>
                 </div>
-                
                 <div style="display: flex; flex-direction: column; gap: 8px; margin-top: 15px;">
                     <button type="button" class="btn-main" style="background: #0284c7;" onclick="xemBaoGiaVAT()">📄 XEM TRƯỚC BẢN IN (NHÁP)</button>
                     <button type="button" class="btn-main" style="background: #ef4444;" onclick="chotDonVAT()">🔴 CHỐT ĐƠN & LƯU SỔ VAT</button>
@@ -139,7 +131,6 @@
             
             <form id="formThemKhoVAT" class="form-card" style="border: 1px solid #10b981;" onsubmit="event.preventDefault(); luuLoHangVaoKhoVAT();">
                 <div class="card-title" style="color: #10b981; border-bottom: none; margin-bottom: 0;">➕ NHẬP LÔ HÀNG VÀO KHO VAT (ĐẦU VÀO)</div>
-                
                 <div class="flex-row" style="background: rgba(16, 185, 129, 0.05); padding: 15px; border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.2);">
                     <div class="form-group" style="flex: 1.5;"><label style="color:#10b981;">Tên Nhà Cung Cấp (NPP)</label><input type="text" id="inNccTen" placeholder="Cty máy tính..." required></div>
                     <div class="form-group" style="flex: 1;"><label style="color:#10b981;">Mã số thuế NPP</label><input type="text" id="inNccMST" placeholder="0123..."></div>
@@ -150,23 +141,20 @@
                 <div style="overflow-x: auto;">
                     <table class="table-nhap" id="bangNhapLieu">
                         <thead><tr>
-                            <th style="width: 4%;">STT</th>
-                            <th style="width: 12%;">Phân Loại</th>
-                            <th style="width: 25%;">Tên Hàng Hóa / Dịch Vụ</th>
-                            <th style="width: 6%;">ĐVT</th>
-                            <th style="width: 6%;">SL</th>
-                            <th style="width: 13%;">Đơn Giá Tr.Thuế</th>
-                            <th style="width: 8%;">Thuế</th>
-                            <th style="width: 13%;">Đơn Giá S.Thuế</th>
-                            <th style="width: 13%;">Thành Tiền</th>
-                            <th style="width: 5%;">Xóa</th>
+                            <th style="width: 4%;">STT</th><th style="width: 12%;">Phân Loại</th><th style="width: 25%;">Tên Hàng Hóa / Dịch Vụ</th>
+                            <th style="width: 6%;">ĐVT</th><th style="width: 6%;">SL</th><th style="width: 13%;">Đơn Giá Tr.Thuế</th>
+                            <th style="width: 8%;">Thuế</th><th style="width: 13%;">Đơn Giá S.Thuế</th><th style="width: 13%;">Thành Tiền</th><th style="width: 5%;">Xóa</th>
                         </tr></thead>
-                        <tbody id="tbodyNhapVat">
-                            </tbody>
+                        <tbody id="tbodyNhapVat"></tbody>
                     </table>
                 </div>
 
                 <button type="button" class="btn-add-row" onclick="themDongNhapVAT()">➕ THÊM DÒNG TRỐNG</button>
+                <div class="total-box">
+                    <div class="total-item"><span>Cộng Tiền Hàng (Tr.Thuế)</span><strong id="tongTruocThueNhap">0 ₫</strong></div>
+                    <div class="total-item"><span>Tổng Tiền Thuế VAT</span><strong id="tongTienThueNhap">0 ₫</strong></div>
+                    <div class="total-item final"><span>Tổng Thanh Toán</span><strong id="tongSauThueNhap">0 ₫</strong></div>
+                </div>
                 <button type="submit" class="btn-add-item">⬇️ LƯU LÔ HÀNG NÀY VÀO KHO VAT</button>
             </form>
 
@@ -195,11 +183,9 @@
                 <div style="max-height: 400px; overflow-y: auto;">
                     <table id="bangChoIn">
                         <thead><tr>
-                            <th style="width: 5%; text-align: center;">Chọn</th>
-                            <th style="width: 45%;">Tên SP (Y chang Kho)</th>
-                            <th style="width: 25%;">Tên VAT Tùy Chỉnh (Nếu Có)</th>
-                            <th style="width: 12%; text-align: right;">Giá Tr.Thuế</th>
-                            <th style="width: 13%; text-align: right;">Giá S.Thuế (Khóa)</th>
+                            <th style="width: 5%; text-align: center;">Chọn</th><th style="width: 45%;">Tên SP (Y chang Kho)</th>
+                            <th style="width: 25%;">Tên VAT Tùy Chỉnh (Nếu Có)</th><th style="width: 10%; text-align: right;">Giá Tr.Thuế</th>
+                            <th style="width: 10%; text-align: right;">Giá S.Thuế</th><th style="width: 5%; text-align: center;">Xóa</th>
                         </tr></thead>
                         <tbody></tbody>
                     </table>
@@ -235,8 +221,6 @@
     };
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
-    
-    // TRANG NÀY SỬ DỤNG DATABASE KHO VAT ĐỘC LẬP
     const khoVatRef = database.ref('KhoVAT_DocLap'); 
     const lichSuVatRef = database.ref('LichSuVAT'); 
     
@@ -244,7 +228,7 @@
     let lichSuVAT = {};
     let isAllExpanded = false;
 
-    // --- CÁC HÀM XỬ LÝ FLOAT TIỀN TỆ (V3.3) ---
+    // --- XỬ LÝ FLOAT TIỀN TỆ (GIỮ LẠI DẤU PHẨY CHO GIÁ TRƯỚC THUẾ) ---
     function pFloat(s) {
         if(typeof s === 'number') return s;
         if(!s) return 0;
@@ -256,7 +240,6 @@
         return Number(n).toLocaleString('vi-VN', { maximumFractionDigits: 4 });
     }
 
-    // Hàm nhận diện gõ phím cho phép 1 dấu phẩy
     function formatTienInput(i) {
         let v = String(i.value).replace(/[^0-9,]/g, '');
         let p = v.split(',');
@@ -265,7 +248,7 @@
         i.value = p.length === 2 ? n + ',' + p[1] : n;
     }
 
-    // Đọc tiền bằng chữ (Luôn bo tròn tổng tiền thanh toán trước khi đọc)
+    // ĐỌC CHỮ TIỀN TỆ ĐÃ LÀM TRÒN
     const mangSo = ['không', 'một', 'hai', 'ba', 'bốn', 'năm', 'sáu', 'bảy', 'tám', 'chín'];
     function docBlock(so, dayDu) {
         let chuoi = ""; let tram = Math.floor(so / 100); so = so % 100; let chuc = Math.floor(so / 10); let donvi = so % 10;
@@ -275,7 +258,7 @@
         return chuoi;
     }
     function docTienBangChu(soTienFloat) {
-        let soTien = Math.round(soTienFloat); // Bo tròn trước khi dịch ra chữ
+        let soTien = Math.round(soTienFloat); 
         if (soTien == 0) return "Không đồng chẵn";
         let chuoi = "", hauto = " tỷ", ty = soTien;
         do {
@@ -316,11 +299,9 @@
     }
 
     // ==========================================
-    // THUẬT TOÁN BẢNG NHẬP LIỆU MISA V3.3 (FLOAT AUTO-SPAWN)
+    // BẢNG NHẬP LIỆU VAT V3.5 (ÉP TRÒN GIÁ SAU THUẾ)
     // ==========================================
-    window.onload = () => { 
-        for(let i=0; i<3; i++) themDongNhapVAT(); 
-    };
+    window.onload = () => { for(let i=0; i<3; i++) themDongNhapVAT(); };
 
     function themDongNhapVAT() {
         let tr = document.createElement('tr');
@@ -347,9 +328,7 @@
             </td>
             <td><input type="text" class="inp-tbl inp-gia-sau input-locked" value="0" readonly tabindex="-1" style="text-align:right;"></td>
             <td class="inp-thanh-tien" style="text-align:right; font-weight:bold; color:#ef4444; font-family:monospace; padding-right:10px;">0</td>
-            <td style="text-align:center;">
-                <button type="button" class="btn-icon del" onclick="xoaDongNhapVAT(this)" title="Xóa dòng này">🗑️</button>
-            </td>
+            <td style="text-align:center;"><button type="button" class="btn-icon del" onclick="xoaDongNhapVAT(this)" title="Xóa dòng này">🗑️</button></td>
         `;
         document.getElementById('tbodyNhapVat').appendChild(tr);
         danhSoThuTuNhap();
@@ -359,7 +338,6 @@
         let row = el.closest('tr');
         let tbody = document.getElementById('tbodyNhapVat');
         let lastRow = tbody.lastElementChild;
-        
         if (row === lastRow) {
             let ten = row.querySelector('.inp-ten').value.trim();
             let gia = row.querySelector('.inp-gia-truoc').value.trim();
@@ -372,6 +350,7 @@
         if (tbody.querySelectorAll('.row-nhap-vat').length > 1) {
             btn.closest('tr').remove();
             danhSoThuTuNhap();
+            tinhTongTienNhap();
         } else {
             showToast("Bảng phải có ít nhất 1 dòng!");
         }
@@ -380,6 +359,25 @@
     function danhSoThuTuNhap() {
         let rows = document.querySelectorAll('.row-nhap-vat');
         rows.forEach((r, i) => { r.querySelector('.stt-nhap').innerText = i + 1; });
+    }
+
+    // TÍNH TOÁN BẢNG NHẬP (ÉP TRÒN GIÁ SAU THUẾ V3.5)
+    function tinhTongTienNhap() {
+        let rows = document.querySelectorAll('.row-nhap-vat');
+        let tongTruoc = 0; let tongSau = 0;
+        rows.forEach(row => {
+            let ten = row.querySelector('.inp-ten').value.trim();
+            if(ten !== "") {
+                let sl = pFloat(row.querySelector('.inp-sl').value) || 0;
+                let gTruoc = pFloat(row.querySelector('.inp-gia-truoc').value) || 0;
+                let gSau = pFloat(row.querySelector('.inp-gia-sau').value) || 0;
+                tongTruoc += sl * gTruoc;
+                tongSau += sl * gSau;
+            }
+        });
+        document.getElementById('tongTruocThueNhap').innerText = fFloat(tongTruoc) + ' ₫';
+        document.getElementById('tongTienThueNhap').innerText = Math.round(tongSau - tongTruoc).toLocaleString('vi-VN') + ' ₫';
+        document.getElementById('tongSauThueNhap').innerText = Math.round(tongSau).toLocaleString('vi-VN') + ' ₫';
     }
 
     function tinhGiaNhapDong(el, kieu) {
@@ -394,14 +392,14 @@
         let valTruoc = pFloat(inTruoc.value);
         let thue = pFloat(inThue.value);
         
-        // Tính toán giữ nguyên số thập phân
-        let sauThue = valTruoc * (1 + thue/100);
-        sauThue = Math.round(sauThue * 10000) / 10000; // Khử lỗi JS (VD: 0.00000004)
+        // V3.5: Giá Sau Thuế LUÔN bị ép làm tròn về số nguyên
+        let sauThue = Math.round(valTruoc * (1 + thue/100));
         
         inSau.value = sauThue === 0 ? '0' : fFloat(sauThue);
         
         let thanhTien = sauThue * sl;
         row.querySelector('.inp-thanh-tien').innerText = fFloat(thanhTien);
+        tinhTongTienNhap();
     }
 
     function luuLoHangVaoKhoVAT() {
@@ -420,7 +418,7 @@
                 let sl = parseInt(row.querySelector('.inp-sl').value) || 1;
                 let giaTruoc = pFloat(row.querySelector('.inp-gia-truoc').value);
                 let thueRate = pFloat(row.querySelector('.inp-thue').value);
-                let giaSau = pFloat(row.querySelector('.inp-gia-sau').value);
+                let giaSau = pFloat(row.querySelector('.inp-gia-sau').value); // Đây đã là số tròn
 
                 for(let i=0; i<sl; i++) {
                     duLieuKhoVAT.push({
@@ -445,12 +443,10 @@
     }
 
     // ==========================================
-    // CÁC CHỨC NĂNG KHO & XUẤT HÓA ĐƠN
+    // CÁC CHỨC NĂNG KHO & XUẤT HÓA ĐƠN V3.5
     // ==========================================
 
-    function capNhatGiaSauThueToanKho() {
-        hienThiKhoVAT();
-    }
+    function capNhatGiaSauThueToanKho() { hienThiKhoVAT(); }
 
     function xoaKhoiKhoVAT(idx) {
         if(confirm("Xóa vĩnh viễn kiện hàng này khỏi kho VAT?")) {
@@ -484,7 +480,7 @@
         });
         
         if (Object.keys(groupedData).length === 0) { 
-            tb.innerHTML = `<tr><td colspan="5" class="empty-state">Kho VAT đang trống. Hãy nhập hàng ở Bảng trên!</td></tr>`; 
+            tb.innerHTML = `<tr><td colspan="6" class="empty-state">Kho VAT đang trống. Hãy nhập hàng ở Bảng trên!</td></tr>`; 
             return;
         } 
         
@@ -512,8 +508,8 @@
             group.items.forEach(item => {
                 let idx = item.indexGoc; 
                 let giaTruoc = pFloat(item.don.giaTruoc);
-                let giaSauXuat = giaTruoc * (1 + vatRateXuat/100);
-                giaSauXuat = Math.round(giaSauXuat * 10000) / 10000;
+                // V3.5: Tính lại theo mức thuế xuất ở Cột Trái và ép làm tròn nguyên
+                let giaSauXuat = Math.round(giaTruoc * (1 + vatRateXuat/100));
 
                 tb.insertAdjacentHTML('beforeend', `
                     <tr class="child-row child_${groupId}" style="display: ${displayStyle};" data-tengoc="${group.tenSP}">
@@ -526,6 +522,7 @@
                         <td><input type="text" class="vat-edit-input vatMaChild_${groupId} inp-ten-vat" placeholder="Tên VAT (nếu muốn in khác)..."></td>
                         <td style="text-align:right; font-family:monospace; color:#fbbf24;">${fFloat(giaTruoc)}</td>
                         <td style="text-align:right; font-family:monospace; color:#4ade80;">${fFloat(giaSauXuat)}</td>
+                        <td style="text-align:center;"><button class="btn-del-item" onclick="xoaKhoiKhoVAT('${idx}')">X</button></td>
                     </tr>
                 `);
             });
@@ -553,7 +550,7 @@
         });
     }
 
-    // --- LỊCH SỬ & CHỐT ĐƠN ---
+    // --- LỊCH SỬ ĐÃ LỘT BỎ LOGIN (V3.4) ---
     function hienThiLichSu() {
         const tb = document.querySelector('#bangLichSu tbody'); const search = document.getElementById('timBill').value.toLowerCase();
         tb.innerHTML = ''; let count = 0;
@@ -569,28 +566,25 @@
                     <td style="color:#ef4444; font-weight:bold;">${key}</td>
                     <td style="font-size:12px;">${bill.ngayVAT}</td>
                     <td>${bill.tenKH}<br><small>MST: ${bill.mstKH || 'N/A'}</small></td>
-                    <td style="text-align:right; font-weight:bold; color:#4ade80;">${fFloat(bill.tongSau)} ₫</td>
-                    <td style="text-align:center;"><button class="btn-sm btn-print-sm" onclick="moModalInLai('${key}')">👁️ In Lại</button></td>
+                    <td style="text-align:right; font-weight:bold; color:#4ade80;">${Math.round(bill.tongSau || 0).toLocaleString('vi-VN')} ₫</td>
+                    <td style="text-align:center; min-width: 120px;">
+                        <button class="btn-sm btn-print-sm" onclick="inLaiBill('${key}')">👁️ Xem</button>
+                        <button class="btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); margin-left:5px;" onclick="xoaLichSuVAT('${key}')">🗑️</button>
+                    </td>
                 </tr>`);
             }
         });
         if (count === 0) tb.innerHTML = `<tr><td colspan="5" class="empty-state">Không tìm thấy.</td></tr>`;
     }
 
-    function moModalInLai(maBill) {
-        document.getElementById('adminModal').style.display = 'flex';
-        document.getElementById('luuMaBillInLai').value = maBill;
-        document.getElementById('admUser').focus();
+    function inLaiBill(ma) {
+        veTrangInVAT(lichSuVAT[ma], 'tracuu');
     }
-    function dongModalAdmin() {
-        document.getElementById('adminModal').style.display = 'none';
-        document.getElementById('admUser').value = ''; document.getElementById('admPass').value = '';
-    }
-    function xacNhanInLai() {
-        let u = document.getElementById('admUser').value; let p = document.getElementById('admPass').value;
-        if(u !== 'admin' || p !== 'techwave@123') { alert('❌ Sai tài khoản hoặc mật khẩu Quản trị!'); return; }
-        let maBill = document.getElementById('luuMaBillInLai').value;
-        dongModalAdmin(); veTrangInVAT(lichSuVAT[maBill], 'tracuu');
+
+    function xoaLichSuVAT(ma) {
+        if(confirm("Xóa vĩnh viễn Lịch sử Hóa đơn này?")) {
+            lichSuVatRef.child(ma).remove().then(() => showToast("Đã xóa hóa đơn khỏi lịch sử!"));
+        }
     }
 
     function taoMaVATMoi() {
@@ -624,12 +618,11 @@
         });
         
         let tTruoc = 0; let tSau = 0;
-        let rateMul = 1 + (vatRateOutput/100);
 
         Object.values(itemsGom).forEach(i => {
             let thanhTienTruoc = i.giaTruoc * i.sl;
-            let giaSauCal = i.giaTruoc * rateMul;
-            giaSauCal = Math.round(giaSauCal * 10000) / 10000;
+            // V3.5: Làm tròn giá 1 chiếc sau thuế
+            let giaSauCal = Math.round(i.giaTruoc * (1 + vatRateOutput/100));
             let thanhTienSau = giaSauCal * i.sl;
             
             i.giaSau = giaSauCal;
@@ -645,7 +638,8 @@
             ppTen: document.getElementById('ppTen').value.trim(), ppMST: document.getElementById('ppMST').value.trim(), ppDiaChi: document.getElementById('ppDiaChi').value.trim(),
             tenKH: document.getElementById('khTen').value.trim(), mstKH: document.getElementById('khMST').value.trim(), dcKH: document.getElementById('khDiaChi').value.trim(),
             ngayVAT: strNgayVAT, vatRate: vatRateOutput, 
-            tongTruoc: tTruoc, tongSau: tSau,
+            tongTruoc: tTruoc, 
+            tongSau: Math.round(tSau), // ÉP LÀM TRÒN TỔNG CUỐI CÙNG TẠI ĐÂY
             items: mangIn 
         };
     }
@@ -679,7 +673,7 @@
         });
     }
 
-    // TEMPLATE IN HÓA ĐƠN VAT CHUẨN (HỖ TRỢ FLOAT)
+    // TEMPLATE IN HÓA ĐƠN VAT CHUẨN (V3.5 LÀM TRÒN SỐ TỔNG)
     function veTrangInVAT(data, mode) {
         if(!data || !data.items) return;
         let pNgay = data.ngayVAT.split('/'); 
@@ -735,7 +729,7 @@
         html += `</tbody>
             <tr><td colspan="5" class="tong-hop">Cộng tiền hàng (Trước thuế):</td><td colspan="2" class="text-right" style="border:1px solid #000; font-weight:bold;">${fFloat(data.tongTruoc)}</td></tr>
             <tr><td colspan="5" class="tong-hop">Tiền thuế VAT: <span style="margin-left:20px; font-weight:bold;">${data.vatRate}%</span></td><td colspan="2" class="text-right" style="border:1px solid #000;">${fFloat(tienThue)}</td></tr>
-            <tr><td colspan="5" class="tong-hop">Tổng tiền thanh toán:</td><td colspan="2" class="text-right" style="border:1px solid #000; font-weight:bold; color:#b91c1c;">${fFloat(data.tongSau)}</td></tr>
+            <tr><td colspan="5" class="tong-hop">Tổng tiền thanh toán:</td><td colspan="2" class="text-right" style="border:1px solid #000; font-weight:bold; color:#b91c1c;">${Math.round(data.tongSau).toLocaleString('vi-VN')}</td></tr>
         </table>
         
         <div style="margin-top:10px; font-weight:bold; font-size:14px;">Số tiền viết bằng chữ: <i style="font-weight:normal; text-decoration:underline;">${docTienBangChu(data.tongSau)}</i></div>
